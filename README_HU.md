@@ -138,3 +138,9 @@ A projekt kutatási és megőrzési célú, garanciavállalás nélkül. A szerz
 ---
 
 *Emu II 1984 — megőrizni azokat a korlátokat, amelyek a legendás samplert egyedivé tették.*
+
+## Fejlesztési alapok
+
+[Build and tests](docs/BUILD.md) · [Current roadmap](docs/ROADMAP.md) · [Hardware map](docs/HARDWARE_MAP.md) · [Source audit](docs/SOURCE_AUDIT.md)
+
+M0 alapozás: scanner-memóriamodell és fájlnév/méret alapú formátumjelöltek szintetikus tesztekkel. CPU-futtatás, firmware-indítás, hangmotor és plugin még nincs implementálva.
