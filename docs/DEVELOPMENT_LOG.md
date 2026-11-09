@@ -18,3 +18,7 @@ file type/size boundaries. No copyrighted binary fixtures used.
 Windows/macOS/Linux Debug/Release workflow added. Remote results are recorded
 in the pull request checks, independently of local validation. Review is the
 next acceptance gate; no release or hardware fidelity is claimed.
+
+Initial remote macOS jobs could not start: GitHub reported the macos-14 runner
+configuration unsupported. Changed to macos-latest; no source/test failure was
+reported by those cancelled jobs.
