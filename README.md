@@ -1,4 +1,4 @@
-# Emu II 1984
+![EMU II 1984 — Vintage Digital Sampler](docs/assets/emu-ii-1984-banner.png)
 
 [![License: AGPL-3.0-only](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
 ![Status: Research / concept](https://img.shields.io/badge/Status-Research%20%2F%20Concept-orange)
