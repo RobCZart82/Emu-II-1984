@@ -1,0 +1,479 @@
+EMU II 1984
+ELSŐ FEJLESZTÉSI TERV ÉS FEJLESZTÉSI NAPLÓ
+========================================
+Dokumentumverzió : 0.1.0
+Létrehozva       : 2026-11-09
+Nyelv            : magyar
+Projekt          : Emu II 1984 – E-mu Emulator II (1984) hardverközeli emuláció
+Célplatformok    : Windows 10/11 (VST3), macOS Intel/Apple Silicon (VST3/AU)
+Tervezett licenc : AGPL-3.0-only a SAJÁT forráskódra és dokumentációra
+Projektállapot   : KUTATÁS / KONCEPCIÓ – még nincs kész emulátor vagy plugin
+
+FONTOS: Ez a dokumentum tervezésre és kutatásra szolgál. A hivatkozott
+projektekből jelenleg NINCS átemelt forráskód az Emu II 1984 projektben.
+A forrásként feltüntetett repók állapota változhat; kódintegráció előtt
+ellenőrizni kell a kiválasztott commitot, a tényleges fájllicencet és a
+függőségeket.
+
+
+1. A PROJEKT CÉLJA
+-----------------
+Olyan natív C++ hangszerszoftver fejlesztése, amely az 1984-es E-mu Emulator II
+mintavételező hangszer működését nem csupán hangbank-lejátszással közelíti,
+hanem lehetőség szerint az eredeti digitális vezérlési architektúrára és
+firmware-re építve rekonstruálja.
+
+Tervezett alapelvek:
+  - Két külön Z80 CPU-példány (main és scanner), a hardveridőzítésre figyelve.
+  - A boot-ROM-ok, a lemezről betöltött OS és a mintabankok külön kezelése.
+  - Memóriatérkép, perifériák, DMA, lapozás, IRQ és floppy-alrendszer emulációja.
+  - Nyolcszólamú hangmotor, eredeti kompandált mintaadatok és DAC-jelút.
+  - Az SSM2045-ös analóg szűrő/VCA karakterének műszakilag alátámasztott DSP-je.
+  - Determinisztikus, tesztelhető emulációs mag, külön host- és GUI-réteggel.
+  - Eredeti formátumok kutatása: IMG, EMUIIFD, HFE, EII; OS: E2O.
+  - VST3 az elsődleges kiadási cél, AU és esetleg CLAP későbbi cél.
+
+MIT NEM ÍGÉRÜNK MOST:
+  - Nem állítjuk, hogy a MAME Emulator II drivere működő hangszert emulál.
+  - Nem állítjuk, hogy az eredeti firmware önmagában hangot állít elő.
+  - Nem terjesztünk eredeti E-mu firmware-t, OS-lemezt vagy gyári hangbankot.
+  - Nem állítunk befejezett ROM-bootot, működő DSP-t vagy telepíthető VST3-at.
+
+
+2. NYÍLT FORRÁSKÓDÚ FORRÁSOK – A FEJLESZTÉS LEGFONTOSABB BÁZISA
+---------------------------------------------------------------
+A jelölések jelentése:
+  [A] ELSŐDLEGES: érdemes közvetlenül tanulmányozni a projekt kezdetén.
+  [B] JELÖLT: részben átvehető, kompatibilitás/teszt/licenc után.
+  [C] REFERENCIA: dokumentálásra, összehasonlításra; nem automatikus kódimport.
+
+[01] [A] MAME – Emulator II HARDVEREMULÁCIÓS DRIVER
+  Projekt: https://github.com/mamedev/mame
+  Közvetlen forráskód:
+  https://github.com/mamedev/mame/blob/master/src/mame/emusys/emu2.cpp
+  Hasznos részek:
+    - main Z80 és scanner Z80 konfigurációja (mindkettő névleg 4 MHz);
+    - memória- és I/O-térképek, memórialapozás, scanner bemenetek;
+    - Z80 DMA/CTC/PIO/SIO és további perifériakapcsolatok;
+    - boot-/scanner-ROM változatok feltérképezése.
+  FONTOS KORLÁT:
+    - skeleton driver, MACHINE_NOT_WORKING | MACHINE_NO_SOUND;
+    - a 74s472.ic135 és 74s472.ic137 dumpja NO_DUMP állapotú;
+    - nem kész sampler engine és nem kész VST3.
+  Licenc: az emu2.cpp fejlécében BSD-3-Clause; a teljes MAME nem
+          kezelhető automatikusan egyetlen ilyen licencű fájlként.
+  Fejlesztési felhasználás: hardverspecifikáció ellenőrzése, regisztertérkép,
+          periféria-modell, saját tesztek. Külső MAME modul átvétele csak
+          konkrét fájl- és függőséglicenc-audit után.
+  Javaslat: M0 HARDWARE_MAP.md + M1 regisztertesztek kiinduló forrása.
+
+[02] [A] ConvertWithMoss – EMULATOR II LEMEZ-, BANK- ÉS MINTAFORMÁTUM
+  Projekt: https://github.com/git-moss/ConvertWithMoss
+  Dokumentált formátumspecifikáció (kiemelten ajánlott):
+  https://github.com/git-moss/ConvertWithMoss/blob/main/documentation/design/EMULATOR2_FORMAT.md
+  Közvetlen forráskódok:
+  https://github.com/git-moss/ConvertWithMoss/blob/main/src/main/java/de/mossgrabers/convertwithmoss/format/emu/emulator2/Emulator2Detector.java
+  https://github.com/git-moss/ConvertWithMoss/blob/main/src/main/java/de/mossgrabers/convertwithmoss/format/emu/emulator2/Emulator2Creator.java
+  https://github.com/git-moss/ConvertWithMoss/blob/main/src/main/java/de/mossgrabers/convertwithmoss/format/emu/EmuCompanding.java
+  https://github.com/git-moss/ConvertWithMoss/blob/main/src/main/java/de/mossgrabers/convertwithmoss/file/hfe/EmuFmDecoder.java
+  Fejlesztési haszon:
+    - IMG / EMUIIFD / HFE lemezek dekódolása és struktúrájuk ellenőrzése;
+    - EII bankfájlok, keymap, 100 voice/preset struktúrák elemzése;
+    - AM6072 kompandálási karakterisztika és mintadekódolás;
+    - eredeti, egyedi Emulator II FM sávformátum és CRC;
+    - minta-loop, root key, velocity, filter- és envelope-paraméterek kutatása;
+    - OS terület és bankterület elválasztása, E2O rendszeradat.
+  FRISS ÁLLAPOT (2026-11-09-i GitHub-kód alapján):
+    A main ágon olvasás ÉS lemezképírás implementáció is található;
+    a changelog 20.4.0 'work-in-progress' bejegyzésében a lemezképírás
+    új funkció, a létrehozott képek valódi hardveren még nincsenek igazolva.
+    Ez előrelépés a korábbi, csak olvasást jelző 20.3.0 megjegyzéshez képest.
+  Licenc: LGPL-3.0, Java. NEM szabad automatikusan a C++ projektbe másolni
+          a fájlokat; adatstruktúra/specifikáció és saját C++ implementáció
+          vagy tisztán elkülönített függőség célravezetőbb. Kódportolás is
+          származékos mű lehet, ezért licenckövetelményeket kell teljesíteni.
+  Javaslat: M0 format fixture-ek, M2 floppy és M3 kompandálási tesztek fő bázisa.
+
+[03] [B] kosarev/z80 – C++ Z80 EMULÁTOR
+  Projekt/forrás: https://github.com/kosarev/z80
+  Fájl: https://github.com/kosarev/z80/blob/master/z80.h
+  Hasznos részek:
+    - C++11, single-header Z80 CPU-mag;
+    - gépi ciklus szintű modell, nem dokumentált utasítások kezelése;
+    - több független példány, eseményvezérelt integráció;
+    - Z80 CPU-tesztek (köztük zexall) tapasztalatai.
+  Licenc: MIT.
+  Nyitott kérdés: illeszthető-e a saját determinisztikus periféria-/DMA-
+          ütemezőnkhöz; a két CPU óráját, IRQ-t, wait-state-et validálni kell.
+  Javaslat: M1-re ez az ELSŐ kipróbálandó CPU-magjelölt.
+
+[04] [C] HxC Floppy Emulator – FLOPPY EMULÁCIÓS KÓD ÉS KUTATÁS
+  Projekt: https://github.com/jfdelnero/HxCFloppyEmulator
+  Történeti változásnapló:
+  https://github.com/jfdelnero/HxCFloppyEmulator/blob/main/hxcfloppyemulator_soft_release_notes.txt
+  Hasznos részek: Emulator II FM track, EMUIIFD, EII támogatás,
+          track/decode/encode eljárások, lemezformátumok konverziója.
+  Licencfigyelmeztetés: egyes állományok GPL-2.0-or-later fejlécűek,
+          a repóban különféle harmadik féltől származó komponensek is vannak.
+          A TELJES könyvtár licencét és az összekapcsolás megfelelőségét
+          ellenőrizni kell. Addig referencia, NEM automatikus beépítés.
+  Javaslat: M2-hez második, független lemez-ellenőrzési referencia.
+
+[05] [B] Steinberg VST3 SDK – NATÍV VST3 PLUGIN FELÜLET
+  Projekt: https://github.com/steinbergmedia/vst3sdk
+  Dokumentáció: https://steinbergmedia.github.io/vst3_dev_portal/
+  Hasznos részek: VST3 processor/controller, eseménykezelés, automatizálás,
+          példapluginok, teszthost és VST3-validator.
+  Licenc: a jelenlegi VST3 SDK 3.8.x MIT. A korábbi verziók feltételei
+          eltérhetnek, ezért fix verziót/commitot kell kiválasztani.
+  Javaslat: M5 során közvetlen VST3 SDK, vagy JUCE wrapper alternatívája.
+
+[06] [B] JUCE – C++ PLUGINKERETRENDSZER / GUI
+  Projekt: https://github.com/juce-framework/JUCE
+  Licenc: https://github.com/juce-framework/JUCE/blob/master/LICENSE.md
+  Hasznos részek: VST3/AU plugin wrapper, platformok közötti GUI,
+          paraméterek, presetmentés, MIDI-események és audio callback.
+  Licenc: JUCE modulok AGPLv3 VAGY külön kereskedelmi licenc szerint.
+          A saját AGPL-3.0-only tervvel elvileg összeilleszthető, de a
+          kiválasztott modulokra, kiadásra és terjesztésre ellenőrizendő.
+          A kereskedelmi JUCE-licenc nem írja felül automatikusan a saját
+          kódunk AGPL-jogállását.
+  Javaslat: M5; a DSP-core ettől maradjon független.
+
+[07] [B] libsamplerate – AUDIO MINTAVÉTELI FREKVENCIA ÁTALAKÍTÁS
+  Projekt: https://github.com/libsndfile/libsamplerate
+  Hasznos részek: 27,777 Hz körüli hardverhangút a DAW 44,1/48/96 kHz
+          mintavételi frekvenciájára átalakító SRC-kutatás, tesztvektorok.
+  Licenc: BSD-2-Clause.
+  Fontos: a real-time callbackre alkalmas, allokációmentes használatot és
+          a megfelelő késleltetéskezelést külön mérni kell. A sampler
+          eredeti pitch/playback modelljét nem váltja ki az SRC-könyvtár.
+  Javaslat: M3/M5; referencia és csak tesztek után beépítendő függőség.
+
+[08] [B] Catch2 – AUTOMATIZÁLT C++ EGYSÉGTESZTEK
+  Projekt: https://github.com/catchorg/Catch2
+  Licenc: BSL-1.0 (Boost Software License).
+  Hasznos részek: Z80-regresszió, ROM-boot-trace, floppy CRC, 256 értékű
+          companding LUT, DSP regresszió, állapot-visszaállítás.
+  Javaslat: M0-tól használható; nem része a plugin runtime-nak.
+
+[09] [B] CLAP SDK és CLAP-wrapper – KÉSŐBBI PLUGINALTERNATÍVA
+  Forrás: https://github.com/free-audio/clap
+  Wrapper: https://github.com/free-audio/clap-wrapper
+  Hasznos részek: CLAP ABI, host-integráció, CLAP-first -> VST3/AU
+          buildstratégia, automatizálás, validálás.
+  Licenc: CLAP SDK és clap-wrapper MIT; a wrapper által hivatkozott
+          további SDK-k saját feltételekkel rendelkeznek.
+  Javaslat: későbbi alternatíva; M0-ban nem választunk véglegesen
+          frameworköt, M5-ben mérlegeljük a JUCE/Steinberg SDK/CLAP útvonalat.
+
+[10] [C] PatternAgents/EmulatorIIDemos – TÖRTÉNETI HARDVERREFERENCIA
+  Projekt: https://github.com/PatternAgents/EmulatorIIDemos
+  Jelentősége: korabeli fejlesztői visszaemlékezés az EII sound engine és
+          DRAM-hozzáférés mikroprogramozott vezérléséről.
+  Ez NEM működő Emulator II emulátorkód; az MP3 demófelvételek külön
+          jogi védelem alatt állhatnak. Ne importáljuk őket tesztadatként
+          jogosultságellenőrzés nélkül.
+  Javaslat: M0 ismeretlen mikrokód / PROM logika kutatási iránya.
+
+FORRÁSOK HASZNÁLATI RANGSORA:
+  1) Hardver, perifériák, ROM-térkép: MAME emu2.cpp.
+  2) Floppy/bank, kompandálás: ConvertWithMoss EMULATOR2_FORMAT.md
+     + Emulator2Detector.java + EmuCompanding.java + EmuFmDecoder.java.
+  3) CPU-mag prototípus: kosarev/z80.
+  4) Független floppy-ellenőrzés: HxC.
+  5) DAW-plugin: VST3 SDK vagy JUCE (döntés M5-ben).
+  6) DSP és SRC: saját, mérhető modell; szükség esetén libsamplerate.
+  7) Teszt/CI: Catch2 és Steinberg validator.
+
+
+3. FONTOS TECHNIKAI PONTOSÍTÁSOK
+-------------------------------
+A) A MAIN/SCANNER ROM NEM AZONOS AZ OS-SEL.
+   A két Z80 saját ROM-jának ellenőrzött verziói és az eredeti floppy-OS
+   külön inputok. Ne nevezzük az 'OS v3.1'-et egyszerűen egyetlen ROM-nak.
+
+B) AZ EII NEM FELTÉTLENÜL TELJES LEMEZKÉP.
+   A '.eii' kinyert bankmemória. A '.img' és '.emuiifd' nyers
+   lemezképek; a '.hfe' HxC-formátum. A '.E2O' külön OS-adat.
+   A program ne próbáljon bankfájlból rendszert indítani.
+
+C) A HANGMOTOR NEM A Z80-AS CPU-BAN 'LAKIK'.
+   A nyolc csatorna mintamemória-hozzáférését és időzítését speciális
+   hardverlogika vezérli. A hiányzó programozott logikák (NO_DUMP)
+   pontos megértése az egyik legnagyobb kockázat.
+
+D) A 8 BIT NEM EGYSZERŰ LINEÁRIS 8-BIT PCM.
+   A kompandált kódot az AM6072 DAC-jelút kezeli. Először a 256 lehetséges
+   kódértékhez tartozó expanziós modell legyen tesztelve.
+
+E) AZ SSM2045 NEM PUSZTÁN EGY GENERIKUS LOW-PASS FILTER.
+   A cél egy méréssel igazolt szűrő/VCA-viselkedés és paraméterskála;
+   a 'meleg' hangzás reklámszó önmagában nem specifikáció. Egyelőre
+   nincs igazoltan beépíthető, jogtisztán kiválasztott SSM2045-kód.
+
+
+4. AJÁNLOTT MAGARCHITEKTÚRA ÉS KÖNYVTÁRSTRUKTÚRA
+------------------------------------------------
+A következő felépítés JAVASLAT, még nem létrehozott könyvtárstruktúra:
+
+  /docs/
+    HARDWARE_MAP.md          [M0] memóriatérkép, I/O, IRQ, perifériák
+    ROM_OS_MATRIX.md         [M0] ROM/OS verzió- és kompatibilitási mátrix
+    FORMAT_NOTES.md          [M0] IMG/EMUIIFD/HFE/EII/E2O
+    SOURCE_AUDIT.md          [M0] 3rd-party verzió, licenc, SPDX, SHA
+    DEVELOPMENT_PLAN_HU.txt [M0] ez a dokumentum GitHub-ba másolva
+  /src/core/
+    cpu/                    [M1] két Z80 és determinisztikus scheduler
+    memory/                 [M1] RAM, ROM, lapozás
+    devices/                [M1] DMA, CTC, PIO, SIO, ADC, IRQ
+    floppy/                 [M2] FM track, controller, OS-betöltés
+    sampler/                [M3] 8 voice, címlogika, loop, DAC
+    analog/                 [M4] SSM2045/VCA/envelope/LFO
+  /src/plugin/               [M5] VST3/AU/CLAP adapter (még nem döntött)
+  /src/gui/                  [M5] modern, eredeti készülék ihlette UI
+  /tests/unit/              [M0+] CPU, periféria, byte/CRC, hangmodell
+  /tests/fixtures/          [M0+] saját/szintetikus, terjeszthető adatok
+  /external/                [M1+] csak auditált és rögzített függőségek
+  /.github/workflows/       [M0+] build, teszt, licenc- és titokellenőrzés
+
+KÖZPONTI ADATFOLYAM:
+  DAW MIDI / automatizálás
+        -> eseménysor / időbélyegek
+        -> két Z80 + perifériák + memória + floppy (determinisztikus core)
+        -> 8 hangcsatornás digitális playback / kompandálás / DAC
+        -> SSM2045/VCA/analóg modellek
+        -> resampling / host audio output
+
+A fájlrendszer és a lemezképek I/O-ja NEM az audio callbackben fusson;
+a plugin-state mentése és UI frissítése is legyen szétválasztva a DSP-től.
+
+
+5. PRIORITÁSOS FEJLESZTÉSI MÉRFÖLDKÖVEK (M0–M6)
+-----------------------------------------------
+M0 – ARCHITEKTÚRA, KUTATÁS, LICENC ÉS TESZTALAPOK           [P0]
+  Feladatok:
+    [ ] Forrásprojektek URL/commit/licenc listájának rögzítése.
+    [ ] MAME periféria- és memóriatérkép kigyűjtése.
+    [ ] Main és scanner ROM/OS kompatibilitási táblázat elkészítése.
+    [ ] NO_DUMP és nem dokumentált logika külön kockázati listája.
+    [ ] Jogtisztán terjeszthető szintetikus tesztadatok gyűjtése.
+    [ ] CMake + Catch2 'hello core' + Windows/macOS CI váz.
+    [ ] GitHub Issues/PR sablonok; README és licenc összhangja.
+  Késznek tekinthető, ha:
+    - a hardverlánc minden ismert és ismeretlen elemét nyilvántartjuk;
+    - a külső kódhoz forrás-/licenctábla készül;
+    - a core tesztprojekt mindkét célplatformon buildel.
+
+M1 – MAIN / SCANNER Z80 + MEMÓRIA / I/O                    [P0]
+  Feladatok:
+    [ ] kosarev/z80 mag tesztelése két független példánnyal.
+    [ ] Memóriabankok, I/O portok, interruptok, DMA/CTC/PIO/SIO modellek.
+    [ ] Gépi ciklusos scheduler és eseményvisszajátszás.
+    [ ] ROM-párosokhoz regiszter-/port-/PC trace (privát teszteszközzel,
+        kizárólag jogszerűen rendelkezésre álló ROM-okon).
+  Késznek tekinthető, ha: mindkét CPU determinisztikusan fut, a boot
+    kezdeti lépéseinek trace-e reprodukálható.
+
+M2 – FLOPPY, OS BOOT ÉS BANKFORMÁTUMOK                      [P0]
+  Feladatok:
+    [ ] IMG/EMUIIFD/HFE szintetikus képek beolvasása és CRC-ellenőrzése.
+    [ ] FM track dekódolás; E2O/OS és bankterület elkülönítése.
+    [ ] Virtuális drive, lemezműveletek; inicializálási/boot trace.
+    [ ] .eii bankimport külön az OS-indítástól.
+  Késznek tekinthető, ha: dokumentált bemenettel reprodukálható OS/UI
+    rendszerállapot érhető el. Ha a hardverlogika hiánya blokkol,
+    a blokkolót dokumentáljuk és alternatív validációt készítünk.
+
+M3 – NYOLCSZÓLAMÚ DIGITÁLIS AUDIO                          [P1]
+  Feladatok:
+    [ ] Mintamemória és nyolc csatorna időzítésének rekonstrukciója.
+    [ ] AM6072 256 elemű konverziós teszt, loop, pitch, voice stealing.
+    [ ] DAC-kimenet, határértékek, aliasing, determinisztikus render.
+    [ ] Független DSP-próbahang szintetikus mintából (nem 'kész emulátor').
+  Késznek tekinthető, ha: 8 egyidejű hang és tesztelhető bit-/időzítési
+    különbségek kezelhetők, a mintalejátszás nem csak generic PCM-player.
+
+M4 – ANALÓG MODELL / SSM2045                               [P1]
+  Feladatok:
+    [ ] Rajzok, vezérlőfeszültségek, paramétertartományok feldolgozása.
+    [ ] Szűrő, rezonancia, VCA, burkológörbék, modulációk implementálása.
+    [ ] Egység- és sweep-tesztek, rezonancia/szint viszonyítás.
+    [ ] Minőség/performance vizsgálat több mintavételi frekvencián.
+  Késznek tekinthető, ha: a modell mérhető, stabil és reprodukálható;
+    a hanghűségi állításokat összehasonlító eredmények támasztják alá.
+
+M5 – VST3 / AU HOST INTEGRÁCIÓ                              [P2]
+  Feladatok:
+    [ ] Frameworkdöntés (JUCE / natív VST3 / CLAP-wrapper).
+    [ ] MIDI Note On/Off, velocity, programváltás, CC, automatizálás.
+    [ ] GUI, lemezkezelő, preset/snapshot, state restore.
+    [ ] Allokációmentes realtime audio callback; offline render.
+    [ ] Windows 10/11 x64, macOS x86_64/arm64 tesztek REAPER-ben.
+  Késznek tekinthető, ha: validált, DAW-ból betölthető hangszerplugin
+    működik; állapotmentés, újratöltés és több instance tesztelve.
+
+M6 – VALIDÁLÁS, STABILITÁS, DOKUMENTÁCIÓ, RELEASE            [P2]
+  Feladatok:
+    [ ] CPU/boot/audio regressziós tesztcsomag.
+    [ ] Render egyezőség: Win/macOS, Intel/ARM eltérések dokumentálása.
+    [ ] Steinberg VST3 validator, REAPER manuális tesztek.
+    [ ] Sem ROM, sem gyári minta, sem licenc nélküli asset a release-ben.
+    [ ] Release notes, telepítési és buildleírás, ismert hibák.
+  Késznek tekinthető, ha: zöld automatizált tesztek és megismételhető
+    manuális tesztjegyzőkönyv mellett kiadható egy előzetes verzió.
+
+
+6. AZ ELSŐ FEJLESZTÉSI ITERÁCIÓ (M0-01 – M0-08)
+------------------------------------------------
+A konkrét legközelebbi feladatok, javasolt PR-felosztás:
+
+  M0-01  Dokumentáció és hivatkozások auditja
+         README.md / README_HU.md / LICENSE / THIRD_PARTY_NOTICES.md;
+         hozzáadni ezt a fejlesztési tervet, összhang ellenőrzése.
+
+  M0-02  MAME hardvertérkép kivonata
+         Az emu2.cpp belépési pontok, ROM régiók, memory_map, io_map,
+         interrupt és órajelfüggőségek gépfüggetlen leírása.
+
+  M0-03  ConvertWithMoss formátumkutatás
+         EMULATOR2_FORMAT.md alapján saját formátum-adatmodell és
+         kis, szintetikus fájltípus-felismerő teszt.
+
+  M0-04  CPU-mag döntési jegyzőkönyv
+         kosarev/z80 licence, CPU-tesztek, duál-CPU ütemezés prototípus.
+
+  M0-05  ROM/OS mátrix és jogi eljárás
+         Boot ROM/scanner ROM/OS párosok, verziók, hash mezők;
+         NINCS bináris ROM a repositoryban.
+
+  M0-06  Minimális CMake + Catch2 tesztek
+         Legalább egy CPU, egy memória és egy formátum unit test;
+         Windows + macOS build workflow.
+
+  M0-07  Technikai kockázati napló
+         IC135/IC137 NO_DUMP, disk controller, 8-voice microcode,
+         SSM2045 mérések hiánya; prioritás és mitigáció.
+
+  M0-08  M0 elfogadási kapu / első PR review
+         Csak jóváhagyott, dokumentált, tiszta licencű kód kerüljön
+         a main branchre. Nem szükséges még futó firmware vagy audio.
+
+
+7. KIEMELT KOCKÁZATOK ÉS ELLENINTÉZKEDÉSEK
+------------------------------------------
+  [KRITIKUS] Hiányzó hanggenerátor-mikrokód / programozott logika:
+    Teendő: MAME NO_DUMP nyilvántartás, kapcsolási rajz, saját black-box
+    állapottesztek, mért/dokumentált funkcionális rekonstrukció.
+
+  [MAGAS] Firmware + OS hozzáférhetősége és jogi státusza:
+    Teendő: jogtisztán birtokolt adatokból privát teszt; nyilvános repo
+    csak kódot és nem jogvédett, saját tesztvektorokat tartalmazzon.
+
+  [MAGAS] GPL/LGPL/AGPL és vegyes licencek:
+    Teendő: SRC/új függőség előtt SPDX, teljes licencszöveg, copyright,
+    linked dependency, commit SHA és release csomag audit.
+
+  [MAGAS] Két CPU + DMA + perifériák időzítési pontatlansága:
+    Teendő: ciklusszintű tesztek, trace és determinisztikus scheduler.
+
+  [MAGAS] SSM2045 karakterisztika bizonytalansága:
+    Teendő: ne jelöljünk hű modellezésnek nem mért generic low-pass-t;
+    mérési terv készítése, referencia összehasonlítás.
+
+  [KÖZEPES] Realtime és DAW állapotmentés:
+    Teendő: offline I/O, előre foglalt bufferek, RT-safe feldolgozás,
+    automatikus és REAPER alapú tesztek.
+
+
+8. LICENC- ÉS FORRÁSKÓD-ÁTVÉTELI SZABÁLYOK
+-----------------------------------------
+  1) Saját források: AGPL-3.0-only a projekt aktuális dokumentációja szerint.
+  2) ROM, OS, factory bank, sample NEM válik AGPL-licencűvé; nincs bundling.
+  3) Kutatás / hivatkozás NEM egyenlő licencjoggal vagy kódintegrációval.
+  4) Átvétel előtt: upstream, pontos útvonal, verzió/commit, szerző,
+     SPDX/licenc, módosítások, terjesztés/linkelés vizsgálata.
+  5) MAME: a driver BSD-3-Clause megjelölése nem érvényes automatikusan
+     az összes felhasznált MAME alkatrészre.
+  6) ConvertWithMoss LGPL-3.0: a Java-kód C++-ba történő átírása
+     sem feltétlenül jogilag független, ha a konkrét kódot ültetjük át.
+     Elsősorban dokumentált bináris formátumokra és saját tesztelt
+     implementációra építsünk; átemeléshez külön audit.
+  7) JUCE AGPLv3/kereskedelmi kettős licenc; ellenőrzendő a tényleges
+     modulok licencelése. A kereskedelmi JUCE-licenc nem szünteti meg
+     saját hozzájárulók AGPL-jogait.
+  8) HxC: egyes források GPL-2.0-or-later, több harmadik fél komponenssel;
+     audit nélkül ne kerüljenek át.
+  9) VST3 SDK 3.8.x MIT; a VST megjelölés/logo külön használati
+     feltételekkel járhat.
+ 10) Projektet nem nevezünk hivatalos 'E-mu' terméknek; nincs gyártói
+     támogatási vagy védjegyhasználati engedély feltételezve.
+
+A fenti megjegyzések tájékoztató jellegűek; bonyolult licenckombináció vagy
+terjesztés esetén jogi szakvélemény indokolt.
+
+
+9. FEJLESZTÉSI NAPLÓ – INDÍTÓ BEJEGYZÉS
+--------------------------------------
+Dátum        : 2026-11-09
+Bejegyzés    : DEV-0001
+Típus        : kutatás / dokumentáció / tervezés
+Mérföldkő    : M0 – előkészítés
+Állapot      : DOKUMENTÁCIÓ ELŐKÉSZÍTVE; KÓD NEM MÓDOSULT
+
+Elvégzett kutatás és döntési javaslatok:
+  [+] A README-k célját tisztáztuk: firmware-t futtató, hardverközeli
+      emuláció, nem egyszerű sampleres presetlejátszás.
+  [+] Az elsődleges hardverkutatási kiindulópontot azonosítottuk:
+      MAME / src/mame/emusys/emu2.cpp.
+  [+] A CPU-mag első jelöltjét azonosítottuk: kosarev/z80 (MIT).
+  [+] A bank- és lemezformátum legfontosabb új kódforrását azonosítottuk:
+      ConvertWithMoss, különösen EMULATOR2_FORMAT.md,
+      Emulator2Detector/Creator, EmuCompanding, EmuFmDecoder.
+  [+] Ellenőriztük a ConvertWithMoss main ágának újabb lemezképíró
+      fejlesztéseit (20.4.0 work-in-progress; hardvervalidálás még nincs).
+  [+] Felvettük a HxC, VST3 SDK, JUCE, libsamplerate, Catch2 és
+      CLAP-wrapper lehetséges felhasználását és licenckockázatait.
+  [+] Rögzítettük az M0–M6 mérföldköveket és a M0-01...M0-08 feladatokat.
+  [+] Rögzítettük, hogy a gyári firmware/OS/mintabankok nem részei
+      a szabadon terjeszthető projektnek.
+
+NEM történt meg (ezek későbbi feladatok):
+  [-] Nem lett emulátorkód importálva vagy lefordítva.
+  [-] Nem lett ROM betöltve vagy OS boot validálva.
+  [-] Nem készült 8-voice sampler, SSM2045 DSP vagy VST3 build.
+  [-] Nem történt GitHub commit/PR/merge ezzel a dokumentummal.
+
+A következő bejegyzés várható témája (NEM elvégzett munka):
+  DEV-0002 – M0-01 + M0-02: a hardvertérkép és a külső függőségek
+  reprodukálható auditja, konkrét GitHub issue/PR bontással.
+
+NAPLÓSABLON A KÉSŐBBI MUNKÁHOZ:
+  Dátum / azonosító / mérföldkő / branch / PR / commit:
+  Változtatás és érintett fájlok:
+  Külső kód vagy dokumentum (upstream, licenc, SHA):
+  Lefuttatott tesztek, platformok és eredmények:
+  Ismert hiba / regresszió / felmerült kérdés:
+  Következő lépés / státusz:
+
+
+10. RÖVID DÖNTÉSI ÖSSZEFOGLALÓ
+------------------------------
+JAVASOLT FEJLESZTÉSI ÚTVONAL:
+  MAME dokumentáció + saját hardvertérkép
+      -> kosarev/z80 CPU-mag validálása
+      -> ConvertWithMoss alapján saját, tesztelt C++ floppy/bank dekóder
+      -> OS boot + hiányzó hardverlogika megértése
+      -> 8-voice digitális hangút + AM6072 tesztek
+      -> SSM2045 DSP és mérés
+      -> VST3/AU wrapper + REAPER teszt + Windows/macOS CI
+
+ELSŐ NÉLKÜLÖZHETETLEN FEJLESZTÉSI FELADAT:
+  M0. Reprodukálható hardverdokumentáció, ROM/OS mátrix, forrás- és
+  licencleltár; ezután determinisztikus két-Z80 prototípus.
+
+A tervezés célja, hogy a projekt megőrizze az 1984-es Emulator II
+technikájának és hangzásának karakterét, miközben jogtisztán,
+átlátható mérföldkövekkel és ellenőrizhető tesztekkel fejlődik.
+
+--- DOKUMENTUM VÉGE ---
