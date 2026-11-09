@@ -1,6 +1,6 @@
 # Third-Party Sources and Licence Notes
 
-This file lists **research references and candidate dependencies**, not necessarily code included in the repository. **No third-party source code, firmware ROM, operating-system image, sample bank, or sound library is bundled by this documentation package.** Update this file when any dependency is actually added.
+This file lists **research references and candidate dependencies**, not necessarily code included in the repository. The build now fetches Catch2 for tests; see the added dependency below. **No third-party source code, firmware ROM, operating-system image, sample bank, or sound library is bundled by this documentation package.** Update this file when any dependency is actually added.
 
 | Reference | Upstream | Observed licence / usage context | Included? |
 | --- | --- | --- | --- |
@@ -19,3 +19,7 @@ This file lists **research references and candidate dependencies**, not necessar
 5. If a commercial JUCE licence is obtained in future, review the licence of **this project's own AGPL-covered code separately**; one does not automatically change the other.
 
 The project's own source/documentation is offered under **AGPL-3.0-only** unless another notice applies. See [LICENSE](LICENSE) and [README.md](README.md).
+
+## Added test dependency
+
+Catch2 v3.7.1, BSL-1.0, is fetched only for tests at commit `fa43b77429ba76c462b1898d6cd2f2d7a9416b14`. See [retained license](licenses/Catch2.txt) and [audit](docs/SOURCE_AUDIT.md). It is not linked into emu_core. Other references remain unintegrated.

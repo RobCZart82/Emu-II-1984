@@ -138,3 +138,9 @@ This is a research and preservation-oriented project, without warranty. Copyrigh
 ---
 
 *Emu II 1984 — preserving the limitations that made a landmark sampler sound unlike anything else.*
+
+## Development baseline
+
+[Build and tests](docs/BUILD.md) · [Current roadmap](docs/ROADMAP.md) · [Hardware map](docs/HARDWARE_MAP.md) · [Source audit](docs/SOURCE_AUDIT.md)
+
+M0 foundation: scanner-memory model and filename/size format hints with synthetic tests. No CPU execution, firmware boot, audio or plugin is implemented.
