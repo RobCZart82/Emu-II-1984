@@ -51,7 +51,7 @@ report retain the caller's spelling; archive member names are never output paths
 ## Tests and observed local corpus
 
 Run `python3 tests/unit/input_inspector_tests.py`, or the normal CTest suite.
-Eleven synthetic Python tests cover identity despite misleading names, size
+Thirteen synthetic Python tests cover identity despite misleading names, size
 boundaries, malformed HFE storage, duplicate ZIP entries, corrupt CRC, path/link
 rejection, resource limits, deterministic reports and CLI error status.
 
@@ -59,7 +59,18 @@ The user's local 19-archive research corpus produced 41 records with zero
 inspection errors. All five expected MAME ROM identities were found. These
 counts describe one local snapshot; none of its bytes are committed here.
 
-The next loader must require an explicit main/scanner selection, recheck bytes
-at load time and record provenance. The current inventory is not a trusted,
-signed manifest and must not authorize runtime loading by itself. PROM bit
-mapping and CPU/OS compatibility are still research work.
+## Select an explicit ROM pair
+
+Extract the two ROM files into separate local paths, then run:
+
+```sh
+python3 tools/inspect_inputs.py --main-rom user-data/main.bin --scanner-rom user-data/scanner.bin
+```
+
+Each file is read into memory and checked for its exact 8192-byte size,
+reference hash and assigned role. The command accepts known main boot and
+scanner identities, and rejects diagnostic images, unknown variants and
+swapped roles. It prints a JSON report only after both files pass. The Python
+entry point `load_rom_pair` returns the same verified bytes and identity
+records for a future boot harness. Pair verification establishes the two
+identities. Compatibility, PROM mapping and boot behavior remain open.
