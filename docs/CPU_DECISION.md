@@ -39,7 +39,9 @@ that both external memory instances and the other CPU retain their state.
   use `fast_u8` and `fast_u16`, which alias the same type on that host.
   That driver is outside the project's test target.
 
-The main CPU/DMA page selectors now have a separate memory model. For the
-scheduler, specify same-tick ordering and bus ownership, then compare
-one-shot and chunked traces, including interrupt and reset boundaries.
+The main CPU/DMA page selectors now have a separate memory model. The offline
+[scheduler contract](SCHEDULER.md) now defines phase/FIFO ordering and tests
+one-shot/chunked traces and synthetic reset/bus ownership. It does not connect
+the CPU probe to cycle-level events. IRQ boundaries and actual DMA/WAIT remain
+unvalidated.
 Defer runtime adoption until these integration constraints are resolved.

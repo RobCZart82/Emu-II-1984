@@ -16,7 +16,9 @@
 The CPU probe has passed CI on Windows, macOS and Linux. The main CPU/DMA
 page selectors now have independent synthetic tests.
 
-1. Add deterministic scheduler and peripheral trace contracts (M1).
+1. Deterministic event queue and trace contract added (see SCHEDULER.md).
+   Resolve cycle-yielding CPU adapters, IRQ and actual DMA ownership before
+   treating it as an integrated dual-CPU scheduler (M1).
 2. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
    behavior (M4), host integration (M5), and release validation (M6).
 
