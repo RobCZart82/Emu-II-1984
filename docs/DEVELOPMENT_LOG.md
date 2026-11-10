@@ -1,5 +1,14 @@
 # Development log
 
+## DEV-0004 — 2026-11-10 — Main CPU/DMA memory paging
+
+The CPU probe landed as `cf4233e8ddb178f6adffc45af255a0b249e507d7`.
+[Main CI](https://github.com/RobCZart82/Emu-II-1984/actions/runs/42777875404)
+passed. Implemented the four page selectors, page-zero reset override, and
+shared ROM/RAM backing. Corrected the port assignment in the hardware map
+after checking the pinned reference's CPU and DMA accessors. Synthetic tests
+cover four windows, latch persistence, shared RAM, and ROM write protection.
+
 ## DEV-0003 — 2026-11-10 — M0 CPU evaluation
 
 Reviewed the source, synthetic tests, reference maps and build instructions
