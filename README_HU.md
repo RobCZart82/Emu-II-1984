@@ -99,10 +99,10 @@ Az alábbi mérföldkövek **tervezettek, nem befejezettek**.
 
 **Első mérnöki cél:** a valódi rendszerindítás ellenőrizhető, reprodukálható megvalósítása. A plugint csak a hangszer működésének megfelelő megértése után érdemes kiadásra késznek nevezni.
 
-## Kutatási referenciák (nem beépített függőségek)
+## Kutatási referenciák
 
 - **[MAME — Emulator II driver](https://github.com/mamedev/mame/blob/master/src/mame/emusys/emu2.cpp):** hardvertérkép és perifériakutatás; a konkrét fájl fejlécében `BSD-3-Clause` szerepel. A MAME többi részének licence eltérhet.
-- **[kosarev/z80](https://github.com/kosarev/z80):** MIT-licencű C++ Z80-magjelölt; **még nincs kiválasztva vagy integrálva**.
+- **[kosarev/z80](https://github.com/kosarev/z80):** MIT-licencű C++ Z80-mag, amelyet a projekt szintetikus tesztekkel értékel.
 - **[ConvertWithMoss](https://github.com/git-moss/ConvertWithMoss):** LGPL-3.0-licencű samplerformátum-kutatás, Emulator II lemez/bank feldolgozással; **nincs integrálva**.
 - **[JUCE](https://github.com/juce-framework/JUCE):** szóba jöhető pluginkeretrendszer, **AGPLv3 vagy kereskedelmi licenc** alatt; **nincs integrálva**.
 - **[Steinberg VST3 SDK](https://github.com/steinbergmedia/vst3sdk):** az újabb SDK-verziók **MIT-licencűek**; **nincs integrálva**.
@@ -111,7 +111,7 @@ Külső kód átvétele előtt lásd: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTIC
 
 ## Első lépések
 
-Jelenleg **nincs támogatott build- vagy telepítési eljárás**. A repository induló célja a specifikáció, a tesztek és az igazolt licencű forráskód összegyűjtése. Telepíthető pluginra csak az M5/M6 mérföldkövek után számítsunk.
+A kutatási mag fordításához és a szintetikus tesztek futtatásához lásd a [fordítási útmutatót](docs/BUILD.md). A telepíthető pluginek az M5–M6 mérföldkőhöz tartoznak.
 
 **Eredeti ROM-ot, OS-lemezképet, gyári hangkönyvtárat vagy más jogvédett hangmintát ne commitolj és ne terjessz megfelelő jogosultság nélkül.** A firmware és minták **nem tartoznak a projekt forráskódlicence alá**.
 
@@ -143,4 +143,4 @@ A projekt kutatási és megőrzési célú, garanciavállalás nélkül. A szerz
 
 [Build and tests](docs/BUILD.md) · [Current roadmap](docs/ROADMAP.md) · [Hardware map](docs/HARDWARE_MAP.md) · [Source audit](docs/SOURCE_AUDIT.md)
 
-M0 alapozás: scanner-memóriamodell és fájlnév/méret alapú formátumjelöltek szintetikus tesztekkel. CPU-futtatás, firmware-indítás, hangmotor és plugin még nincs implementálva.
+Az M0 része a scanner memóriamodellje, a fájlnév és méret szerinti formátumjelölés, valamint a [két Z80-példány szintetikus utasítástesztje](docs/CPU_DECISION.md). A firmware-indítás, a hangmotor és a pluginek későbbi mérföldkövek.

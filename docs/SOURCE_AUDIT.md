@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | [MAME](https://github.com/mamedev/mame/blob/d077ea24f0a73118bee9558bc939b99ae662bfc5/src/mame/emusys/emu2.cpp) | `d077ea24f0a73118bee9558bc939b99ae662bfc5` | Research only; emu2.cpp header BSD-3-Clause, AJR. No MAME code imported. |
 | [ConvertWithMoss](https://github.com/git-moss/ConvertWithMoss/blob/aa89125fec206363cc3cc90ded8487a4acfd3397/documentation/design/EMULATOR2_FORMAT.md) | `aa89125fec206363cc3cc90ded8487a4acfd3397` | Format research only; no Java code ported. Document package reports LGPL-3.0; full dependency audit pending. |
-| [kosarev/z80](https://github.com/kosarev/z80/tree/51d07188fd4ababfb465848b66ca65cc102b92cd) | `51d07188fd4ababfb465848b66ca65cc102b92cd` | Candidate only; MIT reported by supplied plan, integration/license verification pending. |
+| [kosarev/z80](https://github.com/kosarev/z80/tree/51d07188fd4ababfb465848b66ca65cc102b92cd) | `51d07188fd4ababfb465848b66ca65cc102b92cd` | Test-only CPU probe. Inspected `z80.h` and upstream `LICENSE` (MIT, Ivan Kosarev). Standard headers only. [Retained notice](../licenses/KosarevZ80.txt). Runtime decision remains open. |
 | [Catch2 v3.7.1](https://github.com/catchorg/Catch2/tree/fa43b77429ba76c462b1898d6cd2f2d7a9416b14) | `fa43b77429ba76c462b1898d6cd2f2d7a9416b14` | Test-only dependency fetched by CMake; upstream LICENSE.txt inspected, BSL-1.0. License retained upstream and copied to licenses/Catch2.txt. No core runtime dependency. |
 
 Own source and new documentation: AGPL-3.0-only. Scanner map and size constants

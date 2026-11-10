@@ -16,7 +16,14 @@ if(BUILD_TESTING)
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
     GIT_TAG fa43b77429ba76c462b1898d6cd2f2d7a9416b14)
   FetchContent_MakeAvailable(Catch2)
-  add_executable(core_tests tests/unit/core_tests.cpp)
+  # Populate the header without configuring the upstream examples and tools.
+  FetchContent_Declare(KosarevZ80
+    GIT_REPOSITORY https://github.com/kosarev/z80.git
+    GIT_TAG 51d07188fd4ababfb465848b66ca65cc102b92cd
+    SOURCE_SUBDIR emu-header-only)
+  FetchContent_MakeAvailable(KosarevZ80)
+  add_executable(core_tests tests/unit/core_tests.cpp tests/unit/z80_probe_tests.cpp)
+  target_include_directories(core_tests SYSTEM PRIVATE ${kosarevz80_SOURCE_DIR})
   target_link_libraries(core_tests PRIVATE emu_core Catch2::Catch2WithMain)
   include(${catch2_SOURCE_DIR}/extras/Catch.cmake)
   catch_discover_tests(core_tests)
