@@ -11,6 +11,8 @@ else()
 endif()
 include(CTest)
 if(BUILD_TESTING)
+  find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter)
+  add_test(NAME input_inspector COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/input_inspector_tests.py)
   include(FetchContent)
   FetchContent_Declare(Catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git

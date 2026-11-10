@@ -1,5 +1,26 @@
 # Development log
 
+## DEV-0006 — 2026-11-10 — Local input evidence inspector
+
+Added a read-only Python inventory tool with ROM reference-hash identities,
+SHA-256 records, conservative media hints and HFE v1 storage-bound checks.
+ZIPs are read without extraction; CRC errors, duplicate names and resource
+limits are handled explicitly. Unknown inputs are not automatically trusted.
+
+Eleven synthetic Python tests join the existing 18 C++ cases through CTest.
+Local macOS Debug and Release pass all 19 CTest entries (18 C++ cases plus the
+11-case Python suite); BUILD_TESTING=OFF core builds independently.
+The local downloaded 19-ZIP corpus produced 41 records and zero inspection
+errors, including matches for all five MAME main/scanner/diagnostic identities.
+Firmware and media remain local; CI uses only synthetic data.
+
+Corrected the ROM matrix: local IC135/IC137 candidates exist, but pin mapping,
+polarity and authenticity remain unverified. NO_DUMP is the upstream MAME
+state rather than proof of global absence. No original PDF/binary was copied
+into the repository. No firmware was executed and no compatible boot triple
+was claimed. Runtime loader integration remains a separate next step.
+
+
 ## DEV-0005 — 2026-11-10 — Deterministic event scheduling
 
 Baseline: ff506c8 (main CPU/DMA paging and earlier dual-Z80 probe already merged).

@@ -19,7 +19,10 @@ page selectors now have independent synthetic tests.
 1. Deterministic event queue and trace contract added (see SCHEDULER.md).
    Resolve cycle-yielding CPU adapters, IRQ and actual DMA ownership before
    treating it as an integrated dual-CPU scheduler (M1).
-2. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
+2. Local ROM/media inspection now produces explicit evidence levels and rejects
+   malformed archive/HFE storage inputs; it does not load or boot firmware.
+   Next require explicit runtime selections and verify PROM wiring against schematics.
+3. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
    behavior (M4), host integration (M5), and release validation (M6).
 
 No plugin framework, firmware boot, audio engine or release exists yet.

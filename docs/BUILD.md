@@ -1,6 +1,6 @@
 # Build the research core
 
-Requirements: CMake 3.24+, a C++20 compiler, Git and network access on first
+Requirements: CMake 3.24+, a C++20 compiler, Python 3.9+ for tests, Git and network access on first
 configuration (Catch2 and the kosarev/z80 header are fetched at fixed commits).
 No ROMs or plugin SDK needed.
 
@@ -19,3 +19,7 @@ The test target also executes synthetic Z80 instructions on two independent
 buses. Disk validation, firmware boot and audio remain future milestones.
 Windows/macOS/Linux CI runs both configurations. A configured workflow is not
 proof of success; see its actual run before claiming platform support.
+
+The CTest `input_inspector` entry runs 11 additional standard-library Python
+tests. See [local input inspection](LOCAL_INPUTS.md) for the offline inventory
+command. BUILD_TESTING=OFF does not require Python or test dependencies.
