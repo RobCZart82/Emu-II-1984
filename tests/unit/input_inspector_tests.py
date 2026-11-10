@@ -150,6 +150,51 @@ class InputInspectorTests(unittest.TestCase):
             self.assertEqual(run.returncode, 0)
             self.assertEqual(json.loads(run.stdout)['records'][0]['kind'], 'unidentified')
 
+    def test_explicit_pair_rechecks_identity_and_rejects_swapped_roles(self):
+        main = b'M' * 8192
+        scanner = b'S' * 8192
+        diagnostic = b'D' * 8192
+        references = {
+            hashlib.sha1(data).hexdigest(): (role, 'test', len(data))
+            for data, role in [(main, 'main_boot'), (scanner, 'scanner'),
+                               (diagnostic, 'main_diagnostics')]
+        }
+        with tempfile.TemporaryDirectory() as directory, patch.dict(inspector.ROM_REFERENCES, references):
+            main_path = Path(directory) / 'scanner-name.bin'
+            scanner_path = Path(directory) / 'main-name.bin'
+            main_path.write_bytes(main)
+            scanner_path.write_bytes(scanner)
+            (main_bytes, main_identity), (scanner_bytes, scanner_identity) = inspector.load_rom_pair(
+                main_path, scanner_path)
+            self.assertEqual((main_bytes, scanner_bytes), (main, scanner))
+            self.assertEqual(main_identity['kind'], 'main_boot')
+            self.assertEqual(scanner_identity['kind'], 'scanner')
+            with self.assertRaisesRegex(ValueError, 'belongs to scanner'):
+                inspector.load_rom_pair(scanner_path, main_path)
+            scanner_path.write_bytes(bytes(8192))
+            with self.assertRaisesRegex(ValueError, 'unknown ROM identity'):
+                inspector.load_rom_pair(main_path, scanner_path)
+            scanner_path.write_bytes(scanner + b'X')
+            with self.assertRaisesRegex(ValueError, '8192-byte'):
+                inspector.load_rom_pair(main_path, scanner_path)
+            scanner_path.write_bytes(scanner)
+            main_path.write_bytes(diagnostic)
+            with self.assertRaisesRegex(ValueError, 'belongs to main_diagnostics'):
+                inspector.load_rom_pair(main_path, scanner_path)
+
+    def test_pair_cli_failure_outputs_no_partial_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'unknown.bin'
+            path.write_bytes(bytes(8192))
+            main_args = [sys.executable, str(TOOL), '--main-rom', str(path)]
+            incomplete = subprocess.run(main_args, capture_output=True, text=True)
+            self.assertEqual(incomplete.returncode, 2)
+            rejected = subprocess.run(main_args + ['--scanner-rom', str(path)],
+                                      capture_output=True, text=True)
+            self.assertEqual(rejected.returncode, 1)
+            self.assertEqual(rejected.stdout, '')
+            self.assertIn('unknown ROM identity', rejected.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

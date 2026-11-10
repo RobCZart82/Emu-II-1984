@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Read-only local firmware/media inventory. Does not boot, extract or upload data."""
+"""Inspect local firmware and media or verify an explicit main/scanner ROM pair."""
 import argparse
 import hashlib
 import json
@@ -151,18 +151,59 @@ def inventory(paths):
             'records': records, 'error_count': sum(bool(r['errors']) for r in records)}
 
 
+def load_verified_rom(path, role):
+    """Return the exact verified bytes and their identity from one bounded read."""
+    path = Path(path)
+    if path.is_symlink() or not stat.S_ISREG(path.stat().st_mode):
+        raise ValueError(f'{role}: expected a regular ROM file: {path}')
+    expected_size = 8192
+    with path.open('rb') as stream:
+        data = stream.read(expected_size + 1)
+    if len(data) != expected_size:
+        raise ValueError(f'{role}: expected an 8192-byte ROM: {path}')
+    evidence = inspect_bytes(path.name, data)
+    if evidence['evidence'] != 'reference_hash_match':
+        raise ValueError(f'{role}: unknown ROM identity: {path}')
+    if evidence['kind'] != role:
+        raise ValueError(f"{role}: selected ROM belongs to {evidence['kind']}: {path}")
+    return data, {'source': str(path), **evidence}
+
+
+def load_rom_pair(main_path, scanner_path):
+    """Validate both roles before handing any bytes to a consumer."""
+    main_rom = load_verified_rom(main_path, 'main_boot')
+    scanner_rom = load_verified_rom(scanner_path, 'scanner')
+    return main_rom, scanner_rom
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('paths', nargs='+', type=Path)
+    parser.add_argument('paths', nargs='*', type=Path, help='files or directories to inventory')
+    parser.add_argument('--main-rom', type=Path, help='explicit main boot ROM file')
+    parser.add_argument('--scanner-rom', type=Path, help='explicit scanner ROM file')
     args = parser.parse_args(argv)
-    try:
-        report = inventory(args.paths)
-        json.dump(report, sys.stdout, ensure_ascii=True, indent=2)
-        sys.stdout.write('\n')
-        return 1 if report['error_count'] else 0
-    except OSError as error:
-        print(str(error), file=sys.stderr)
-        return 2
+    pair_mode = args.main_rom is not None or args.scanner_rom is not None
+    if pair_mode:
+        if args.paths or args.main_rom is None or args.scanner_rom is None:
+            parser.error('use both --main-rom and --scanner-rom without inventory paths')
+        try:
+            (_, main), (_, scanner) = load_rom_pair(args.main_rom, args.scanner_rom)
+        except (OSError, ValueError) as error:
+            print(str(error), file=sys.stderr)
+            return 1
+        report = {'schema_version': 1, 'purpose': 'verified_rom_selection',
+                  'records': [main, scanner], 'error_count': 0}
+    elif not args.paths:
+        parser.error('provide inventory paths or an explicit ROM pair')
+    else:
+        try:
+            report = inventory(args.paths)
+        except OSError as error:
+            print(str(error), file=sys.stderr)
+            return 2
+    json.dump(report, sys.stdout, ensure_ascii=True, indent=2)
+    sys.stdout.write('\n')
+    return 1 if report['error_count'] else 0
 
 
 if __name__ == '__main__':
