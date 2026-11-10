@@ -4,8 +4,11 @@ Evidence: [MAME emu2.cpp at d077ea24f0a7](https://github.com/mamedev/mame/blob/d
 Research model, not a complete verified hardware specification.
 
 Two 4 MHz Z80s; main and scanner have separate address spaces.
-Main CPU and DMA use distinct pairs of 32 KiB page selectors (ports 68–6B),
-reset initially selecting page zero. Only ROM 00000–01FFF and RAM 02000–027FF
+Main CPU (ports 68–69) and DMA (6A–6B) each have two 32 KiB page
+selectors, for the lower and upper halves of their 16-bit address space.
+The reference latches each selector's low four bits. Reset forces all four
+windows to page zero until the first normal selector write and preserves
+previous latch contents. Only ROM 00000–01FFF and RAM 02000–027FF
 are mapped in the reference's 19-bit backing space; the rest is incomplete.
 Scanner ROM: 0000–1FFF mirrored through 7FFF; RAM: 8000–87FF mirrored through FFFF.
 

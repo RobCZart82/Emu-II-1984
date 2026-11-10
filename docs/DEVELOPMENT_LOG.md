@@ -1,5 +1,18 @@
 # Development log
 
+## DEV-0003 — 2026-11-10 — M0 CPU evaluation
+
+Reviewed the source, synthetic tests, reference maps and build instructions
+at baseline `dc1e9f5b51390e633a2cc84d2759f124b654744e`.
+[Baseline CI](https://github.com/RobCZart82/Emu-II-1984/actions/runs/42708948184)
+passed all six Debug/Release jobs on Windows, macOS and Linux.
+
+Pinned the MIT-licensed kosarev/z80 header for a test-only, dual-instance
+instruction probe. The tests cover register and bus isolation, T-state
+totals, write and I/O timestamps, and independent CPU reset. See
+[CPU evaluation](CPU_DECISION.md) for limitations and upstream results.
+The next hardware task is the independent main CPU/DMA page map.
+
 ## DEV-0002 — 2026-11-09 — M0 foundation
 
 Supplied README/license package preserved on main in commit 35bcf70. Original

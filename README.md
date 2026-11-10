@@ -99,10 +99,10 @@ All milestones are **planned**, not completed.
 
 **First engineering target:** establish an auditable, reproducible boot path rather than announcing an audio plug-in before the original system behavior is understood.
 
-## Research references (not bundled dependencies)
+## Research references
 
 - **[MAME — Emulator II driver](https://github.com/mamedev/mame/blob/master/src/mame/emusys/emu2.cpp):** hardware map and starting-point device research; the file identifies itself as `BSD-3-Clause`. Other MAME components may carry different licences.
-- **[kosarev/z80](https://github.com/kosarev/z80):** candidate MIT-licensed C++ Z80 core; **not selected or integrated yet**.
+- **[kosarev/z80](https://github.com/kosarev/z80):** MIT-licensed C++ Z80 core under evaluation in the synthetic tests.
 - **[ConvertWithMoss](https://github.com/git-moss/ConvertWithMoss):** LGPL-3.0 sampler format research, including Emulator II disk/bank parsing; **not integrated**.
 - **[JUCE](https://github.com/juce-framework/JUCE):** candidate plug-in framework, available under **AGPLv3 or a commercial licence**; **not integrated**.
 - **[Steinberg VST3 SDK](https://github.com/steinbergmedia/vst3sdk):** modern SDK releases use the **MIT licence**; **not integrated**.
@@ -111,7 +111,7 @@ See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before adopting external co
 
 ## Getting started
 
-There is **no supported build or installation procedure yet**. The repository is intended to begin with specifications, tests, and licensed source code. Check future releases for installable plug-ins only after milestone M5/M6 is reached.
+Follow the [build and test instructions](docs/BUILD.md) to compile the research core and run the synthetic tests. Installable plug-ins are planned for milestones M5–M6.
 
 **Do not commit or redistribute original ROM, operating-system disk images, factory libraries, or third-party sound banks** without an appropriate legal right to do so. ROM and sample data are **not covered by this project's code licence**.
 
@@ -143,4 +143,4 @@ This is a research and preservation-oriented project, without warranty. Copyrigh
 
 [Build and tests](docs/BUILD.md) · [Current roadmap](docs/ROADMAP.md) · [Hardware map](docs/HARDWARE_MAP.md) · [Source audit](docs/SOURCE_AUDIT.md)
 
-M0 foundation: scanner-memory model and filename/size format hints with synthetic tests. No CPU execution, firmware boot, audio or plugin is implemented.
+M0 includes scanner memory, filename/size format hints, and a test-only [dual-Z80 instruction probe](docs/CPU_DECISION.md). Firmware boot, audio, and plug-ins remain future milestones.
