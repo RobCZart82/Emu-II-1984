@@ -2,7 +2,7 @@
 
 | Priority | Unknown | Next evidence / mitigation |
 | --- | --- | --- |
-| Critical | IC135/IC137 sound-generator PROM logic unavailable | Research schematics and measured behavior; record functional approximations explicitly |
+| Critical | IC135/IC137 local archive candidates not yet circuit-validated | Research schematics and measured behavior; record functional approximations explicitly |
 | High | ROM/OS pairing and provenance | Private lawful inputs, metadata and reproducible boot trace |
 | High | CPU/DMA/device timing | Dual-instance tests, bus events and deterministic replay |
 | High | Disk controller and FM alignment | Independent synthetic tracks, corrupt/truncated fixtures and CRC vectors |
