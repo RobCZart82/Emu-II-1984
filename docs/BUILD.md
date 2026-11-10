@@ -20,6 +20,7 @@ buses. Disk validation, firmware boot and audio remain future milestones.
 Windows/macOS/Linux CI runs both configurations. A configured workflow is not
 proof of success; see its actual run before claiming platform support.
 
-The CTest `input_inspector` entry runs 11 additional standard-library Python
-tests. See [local input inspection](LOCAL_INPUTS.md) for the offline inventory
-command. BUILD_TESTING=OFF does not require Python or test dependencies.
+CTest includes the Python input inspector suite and the synthetic ROM trace
+test. See [local input inspection and tracing](LOCAL_INPUTS.md) for the
+research commands. BUILD_TESTING=OFF does not require Python or test
+dependencies.

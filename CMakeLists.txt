@@ -24,6 +24,11 @@ if(BUILD_TESTING)
     GIT_TAG 51d07188fd4ababfb465848b66ca65cc102b92cd
     SOURCE_SUBDIR emu-header-only)
   FetchContent_MakeAvailable(KosarevZ80)
+  add_executable(z80_rom_trace tools/z80_rom_trace.cpp)
+  target_include_directories(z80_rom_trace SYSTEM PRIVATE ${kosarevz80_SOURCE_DIR})
+  target_link_libraries(z80_rom_trace PRIVATE emu_core)
+  add_test(NAME z80_rom_trace COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/rom_trace_tests.py $<TARGET_FILE:z80_rom_trace>)
   add_executable(core_tests tests/unit/scheduler_tests.cpp tests/unit/core_tests.cpp tests/unit/main_memory_tests.cpp tests/unit/z80_probe_tests.cpp)
   target_include_directories(core_tests SYSTEM PRIVATE ${kosarevz80_SOURCE_DIR})
   target_link_libraries(core_tests PRIVATE emu_core Catch2::Catch2WithMain)

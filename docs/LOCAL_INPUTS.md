@@ -72,5 +72,32 @@ reference hash and assigned role. The command accepts known main boot and
 scanner identities, and rejects diagnostic images, unknown variants and
 swapped roles. It prints a JSON report only after both files pass. The Python
 entry point `load_rom_pair` returns the same verified bytes and identity
-records for a future boot harness. Pair verification establishes the two
+records for the offline Z80 trace tool. Pair verification establishes the two
 identities. Compatibility, PROM mapping and boot behavior remain open.
+
+## Trace the first Z80 steps
+
+Build with testing enabled, then point the wrapper at the built executable:
+
+```sh
+python3 tools/trace_roms.py --runner build/z80_rom_trace \
+  --main-rom user-data/main.bin --scanner-rom user-data/scanner.bin \
+  > user-data/startup-trace.csv
+```
+
+With a multi-configuration Windows build, use the executable under
+`build/Debug` or `build/Release`. The wrapper passes the verified bytes
+to the runner through stdin. Keep the CSV local alongside the ROM identities.
+
+The runner starts each CPU separately using its existing memory model. Each
+CSV row records the CPU, step number, program counter and cumulative T-states.
+Main page-select outputs are handled. The trace ends at the first other I/O
+access, HALT or 256 steps per CPU. An unmodelled port row records the partial
+step with no final program counter. Addresses are printed in decimal.
+
+Two local runs with Main 2.3 and Scanner 3.1 yielded identical traces. Main
+reached the 256-step limit at PC 0x000D. Scanner reached an output to port
+0xF0EC on step 48. The low byte 0xEC mirrors scanner CTC channel 0
+(0x60) in the [reference hardware map](HARDWARE_MAP.md).
+The two CPUs are run independently, with shared peripheral timing, IRQ, DMA
+and the floppy/OS boot path still pending.
