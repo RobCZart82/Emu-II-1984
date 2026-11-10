@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 cmake_minimum_required(VERSION 3.24)
 project(EmuII1984 VERSION 0.1.0 LANGUAGES CXX)
-add_library(emu_core src/core/formats.cpp src/core/main_memory.cpp src/core/scanner_memory.cpp)
+add_library(emu_core src/core/scheduler.cpp src/core/formats.cpp src/core/main_memory.cpp src/core/scanner_memory.cpp)
 target_include_directories(emu_core PUBLIC src)
 target_compile_features(emu_core PUBLIC cxx_std_20)
 if(MSVC)
@@ -22,7 +22,7 @@ if(BUILD_TESTING)
     GIT_TAG 51d07188fd4ababfb465848b66ca65cc102b92cd
     SOURCE_SUBDIR emu-header-only)
   FetchContent_MakeAvailable(KosarevZ80)
-  add_executable(core_tests tests/unit/core_tests.cpp tests/unit/main_memory_tests.cpp tests/unit/z80_probe_tests.cpp)
+  add_executable(core_tests tests/unit/scheduler_tests.cpp tests/unit/core_tests.cpp tests/unit/main_memory_tests.cpp tests/unit/z80_probe_tests.cpp)
   target_include_directories(core_tests SYSTEM PRIVATE ${kosarevz80_SOURCE_DIR})
   target_link_libraries(core_tests PRIVATE emu_core Catch2::Catch2WithMain)
   include(${catch2_SOURCE_DIR}/extras/Catch.cmake)

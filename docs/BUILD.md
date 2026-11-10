@@ -13,7 +13,8 @@ ctest --test-dir build -C Debug --output-on-failure
 Use Release instead of Debug to verify optimized builds. Disable tests with
 `-DBUILD_TESTING=OFF` for a dependency-free static core library.
 
-The static core builds scanner memory, main CPU/DMA memory paging and conservative filename/size hints.
+The static core builds scanner memory, main CPU/DMA memory paging, an offline
+deterministic event scheduler and conservative filename/size hints.
 The test target also executes synthetic Z80 instructions on two independent
 buses. Disk validation, firmware boot and audio remain future milestones.
 Windows/macOS/Linux CI runs both configurations. A configured workflow is not

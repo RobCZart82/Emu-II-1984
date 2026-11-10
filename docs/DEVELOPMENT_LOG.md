@@ -1,5 +1,26 @@
 # Development log
 
+## DEV-0005 — 2026-11-10 — Deterministic event scheduling
+
+Baseline: ff506c8 (main CPU/DMA paging and earlier dual-Z80 probe already merged).
+Added a single-threaded uint64 event scheduler, inclusive deadlines, explicit
+same-tick phase/FIFO ordering and stable trace records. Handler-enqueued events,
+phase inversion, recursion and exceptions have defined behavior. A synthetic
+bus-ownership example exercises the existing MainMemory model. This is not
+cycle-level CPU integration or an implemented DMA controller.
+
+Local macOS arm64 Debug and Release: 18/18 test cases pass in each configuration.
+The dependency-free BUILD_TESTING=OFF core also builds. No external source or
+dependency changes. Remote platform evidence is attached to this pull request.
+
+CI fix: feature branches run checks via pull_request; push runs are retained
+for main. This avoids duplicate feature push/PR jobs with identical check names.
+Manual workflow dispatch remains available. Required check names are unchanged.
+
+Next: select a CPU bus-yield strategy, then add IRQ/device and DMA arbitration
+integration tests; hardware boot and audio remain unimplemented.
+
+
 ## DEV-0004 — 2026-11-10 — Main CPU/DMA memory paging
 
 The CPU probe landed as `cf4233e8ddb178f6adffc45af255a0b249e507d7`.
