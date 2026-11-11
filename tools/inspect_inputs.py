@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import lzma
 from pathlib import Path, PurePosixPath
 import stat
 import struct
@@ -120,7 +121,8 @@ def inspect_file(path):
                         with archive.open(member) as stream:
                             data = read_limited(stream, MAX_FILE)
                         record.update(inspect_bytes(member.filename, data))
-                    except (OSError, ValueError, RuntimeError, zipfile.BadZipFile, NotImplementedError, zlib.error) as error:
+                    except (OSError, ValueError, RuntimeError, zipfile.BadZipFile,
+                            NotImplementedError, zlib.error, lzma.LZMAError) as error:
                         record['errors'] = [str(error)]
                     records.append(record)
         else:

@@ -96,6 +96,39 @@ class InputInspectorTests(unittest.TestCase):
             self.assertTrue(records[0]['errors'])
             self.assertNotIn('sha256', records[0])
 
+    def test_corrupt_lzma_member_keeps_later_members_and_files_in_json_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'a-corrupt.zip'
+            with zipfile.ZipFile(path, 'w', compression=zipfile.ZIP_LZMA) as archive:
+                archive.writestr('corrupt.bin', bytes(range(256)) * 8)
+                archive.writestr('later.bin', b'valid member')
+            data = bytearray(path.read_bytes())
+            name_length, extra_length = struct.unpack_from('<HH', data, 26)
+            payload_start = 30 + name_length + extra_length
+            # Damage the LZMA properties length in the first member's payload.
+            data[payload_start + 2] ^= 0xff
+            path.write_bytes(data)
+            later_file = Path(directory) / 'z-valid.bin'
+            later_file.write_bytes(b'valid file')
+
+            run = subprocess.run([sys.executable, str(TOOL), directory],
+                                 capture_output=True, text=True)
+            self.assertEqual(run.returncode, 1)
+            report = json.loads(run.stdout)
+            self.assertEqual(report['error_count'], 1)
+            self.assertEqual(len(report['records']), 3)
+            failed, member, standalone = report['records']
+            self.assertEqual(failed['member'], 'corrupt.bin')
+            self.assertTrue(failed['errors'])
+            self.assertNotIn('sha256', failed)
+            self.assertEqual(member['member'], 'later.bin')
+            self.assertEqual(member['sha256'], hashlib.sha256(b'valid member').hexdigest())
+            self.assertEqual(standalone['source'], str(later_file))
+            self.assertEqual(standalone['sha256'], hashlib.sha256(b'valid file').hexdigest())
+            self.assertEqual(member['errors'], [])
+            self.assertEqual(standalone['errors'], [])
+            self.assertEqual(run.stderr, '')
+
     def test_unsafe_members_and_zip_symlinks_are_not_read(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'unsafe.zip'

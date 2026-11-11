@@ -51,9 +51,10 @@ report retain the caller's spelling; archive member names are never output paths
 ## Tests and observed local corpus
 
 Run `python3 tests/unit/input_inspector_tests.py`, or the normal CTest suite.
-Thirteen synthetic Python tests cover identity despite misleading names, size
+Fourteen synthetic Python tests cover identity despite misleading names, size
 boundaries, malformed HFE storage, duplicate ZIP entries, corrupt CRC, path/link
 rejection, resource limits, deterministic reports and CLI error status.
+A corrupt LZMA member is reported alongside later valid members and files.
 
 The user's local 19-archive research corpus produced 41 records with zero
 inspection errors. All five expected MAME ROM identities were found. These
@@ -91,6 +92,9 @@ to the runner through stdin. Keep the CSV local alongside the ROM identities.
 
 The runner starts each CPU separately using its existing memory model. Each
 CSV row records the CPU, step number, program counter and cumulative T-states.
+Each step is one upstream `on_step()` call. DD and FD prefixes can occupy
+their own rows. For `DD 21 34 12`, the prefix row ends at PC 1 with 4
+T-states, and the next row ends at PC 4 with 14 cumulative T-states.
 Main page-select outputs are handled. The trace ends at the first other I/O
 access, access outside mapped main ROM/RAM, HALT or 256 steps per CPU. An unmodelled port row records the partial
 step with no final program counter. The appended CSV field `memory_address`
