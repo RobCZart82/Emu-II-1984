@@ -21,8 +21,9 @@ page selectors now have independent synthetic tests.
    treating it as an integrated dual-CPU scheduler (M1).
 2. Local ROM/media inspection, explicit main/scanner ROM selection and bounded
    offline startup tracing are implemented (see LOCAL_INPUTS.md). The trace
-   stops at unmodelled memory or I/O. Next integrate the scanner CTC, shared
-   CPU/device timing and verify PROM wiring against schematics.
+   stops at unmodelled memory or I/O. Scanner CTC programming is now handled
+   through a timing boundary (see CTC_PROGRAMMING.md). Next integrate CTC
+   counting/IRQ, scanner PIO and shared CPU/device timing, and verify PROM wiring.
 3. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
    behavior (M4), host integration (M5), and release validation (M6).
 
