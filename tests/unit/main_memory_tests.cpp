@@ -73,3 +73,21 @@ TEST_CASE("Main backing memory shares RAM and protects ROM across buses") {
     REQUIRE(memory.read(dma, 0x2000) == 0xff);
     REQUIRE(memory.read(cpu, 0x2000) == 0x11);
 }
+
+TEST_CASE("Mapped main memory boundaries follow the selected bus pages") {
+    emu::MainMemory memory;
+    for (const auto bus : {cpu, dma}) {
+        REQUIRE(memory.is_mapped(bus, 0));
+        REQUIRE(memory.is_mapped(bus, 0x1fff));
+        REQUIRE(memory.is_mapped(bus, 0x2000));
+        REQUIRE(memory.is_mapped(bus, 0x27ff));
+        REQUIRE_FALSE(memory.is_mapped(bus, 0x2800));
+        REQUIRE(memory.is_mapped(bus, 0xa000));
+        REQUIRE_FALSE(memory.is_mapped(bus, 0xffff));
+    }
+    memory.write_page_port(0x6a, 1);
+    REQUIRE_FALSE(memory.is_mapped(cpu, 0));
+    REQUIRE(memory.is_mapped(dma, 0));
+    memory.reset_paging();
+    REQUIRE(memory.is_mapped(cpu, 0));
+}

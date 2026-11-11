@@ -92,8 +92,12 @@ to the runner through stdin. Keep the CSV local alongside the ROM identities.
 The runner starts each CPU separately using its existing memory model. Each
 CSV row records the CPU, step number, program counter and cumulative T-states.
 Main page-select outputs are handled. The trace ends at the first other I/O
-access, HALT or 256 steps per CPU. An unmodelled port row records the partial
-step with no final program counter. Addresses are printed in decimal.
+access, access outside mapped main ROM/RAM, HALT or 256 steps per CPU. An unmodelled port row records the partial
+step with no final program counter. The appended CSV field `memory_address`
+records the translated physical address for `unmodelled_memory_read` and
+`unmodelled_memory_write`. Port rows leave it empty. Earlier memory writes in
+an interrupted instruction may already have happened. Addresses are printed
+in decimal.
 
 Two local runs with Main 2.3 and Scanner 3.1 yielded identical traces. Main
 reached the 256-step limit at PC 0x000D. Scanner reached an output to port

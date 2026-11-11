@@ -20,6 +20,11 @@ struct UnmodelledPort {
     std::uint16_t address;
 };
 
+struct UnmodelledMemory {
+    const char* direction;
+    std::uint32_t address;
+};
+
 template<class Memory>
 class TraceCpu : public z80::z80_cpu<TraceCpu<Memory>> {
 public:
@@ -27,17 +32,20 @@ public:
 
     z80::fast_u8 on_read(z80::fast_u16 address) {
         const auto addr = static_cast<std::uint16_t>(address);
-        if constexpr (std::is_same_v<Memory, emu::MainMemory>)
+        if constexpr (std::is_same_v<Memory, emu::MainMemory>) {
+            check_memory(addr, "read");
             return memory_.read(emu::MainMemory::Bus::cpu, addr);
-        else
+        } else
             return memory_.read(addr);
     }
 
     void on_write(z80::fast_u16 address, z80::fast_u8 value) {
         const auto addr = static_cast<std::uint16_t>(address);
         const auto byte = static_cast<std::uint8_t>(value);
-        if constexpr (std::is_same_v<Memory, emu::MainMemory>)
+        if constexpr (std::is_same_v<Memory, emu::MainMemory>) {
+            check_memory(addr, "write");
             memory_.write(emu::MainMemory::Bus::cpu, addr, byte);
+        }
         else
             memory_.write(addr, byte);
     }
@@ -62,6 +70,13 @@ public:
     std::uint64_t ticks = 0;
 
 private:
+    void check_memory(std::uint16_t address, const char* direction) const {
+        if (!memory_.is_mapped(emu::MainMemory::Bus::cpu, address)) {
+            throw UnmodelledMemory{direction,
+                memory_.physical_address(emu::MainMemory::Bus::cpu, address)};
+        }
+    }
+
     Memory& memory_;
 };
 
@@ -75,13 +90,18 @@ void trace(const char* name, Memory& memory) {
             cpu.on_step();
         } catch (const UnmodelledPort& port) {
             std::cout << name << ',' << step << ',' << pc << ",," << cpu.ticks
-                      << ",unmodelled_" << port.direction << ',' << port.address << '\n';
+                      << ",unmodelled_" << port.direction << ',' << port.address << ",\n";
+            return;
+        } catch (const UnmodelledMemory& access) {
+            std::cout << name << ',' << step << ',' << pc << ",," << cpu.ticks
+                      << ",unmodelled_memory_" << access.direction << ",,"
+                      << access.address << '\n';
             return;
         }
         const bool halted = cpu.on_is_halted();
         const char* event = halted ? "halt" : step == max_steps ? "step_limit" : "step";
         std::cout << name << ',' << step << ',' << pc << ',' << cpu.get_pc()
-                  << ',' << cpu.ticks << ',' << event << ",\n";
+                  << ',' << cpu.ticks << ',' << event << ",,\n";
         if (halted) return;
     }
 }
@@ -102,7 +122,7 @@ int main() {
     emu::ScannerMemory scanner_memory;
     main_memory.load_rom(main_bytes);
     scanner_memory.load_rom(scanner_bytes);
-    std::cout << "cpu,step,pc_before,pc_after,t_states,event,port\n";
+    std::cout << "cpu,step,pc_before,pc_after,t_states,event,port,memory_address\n";
     trace("main", main_memory);
     trace("scanner", scanner_memory);
     return std::cout ? 0 : 1;

@@ -15,6 +15,7 @@ public:
     void write_page_port(std::uint16_t port, std::uint8_t value) noexcept;
     [[nodiscard]] std::uint32_t physical_address(Bus bus, std::uint16_t address) const noexcept;
     [[nodiscard]] std::uint8_t read(Bus bus, std::uint16_t address) const noexcept;
+    [[nodiscard]] bool is_mapped(Bus bus, std::uint16_t address) const noexcept;
     void write(Bus bus, std::uint16_t address, std::uint8_t value) noexcept;
 
 private:

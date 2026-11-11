@@ -43,6 +43,10 @@ std::uint8_t MainMemory::read(Bus bus, std::uint16_t address) const noexcept {
     return 0xff; // Unmapped read convention for the research model.
 }
 
+bool MainMemory::is_mapped(Bus bus, std::uint16_t address) const noexcept {
+    return physical_address(bus, address) < ram_base + ram_.size();
+}
+
 void MainMemory::write(Bus bus, std::uint16_t address, std::uint8_t value) noexcept {
     const auto physical = physical_address(bus, address);
     if (physical >= ram_base && physical < ram_base + ram_.size()) {
