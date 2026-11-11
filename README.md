@@ -27,6 +27,12 @@ The priority is **authentic behavior where technically feasible**:
 
 **Design principle:** original firmware controls emulated hardware; any unavailable or undocumented hardware logic must be reconstructed as an explicit, testable model. Running a Z80 ROM alone will not produce sound.
 
+## Hardware reference
+
+![Detail of the original E-mu Emulator II control panel](docs/assets/emulator-ii-control-panel.png)
+
+*Detail of the original E-mu Emulator II control panel.*
+
 ## Proposed architecture
 
 ```text

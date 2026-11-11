@@ -27,6 +27,12 @@ A prioritás az **eredeti működés pontos rekonstrukciója, ahol ez műszakila
 
 **Tervezési alapelv:** az eredeti firmware emulált hardvert vezérel; a nem hozzáférhető vagy dokumentálatlan logikát külön, tesztelhető modellel kell pótolni. A Z80-ROM elindítása önmagában nem állít elő hangot.
 
+## Hardverreferencia
+
+![Az eredeti E-mu Emulator II kezelőpaneljének részlete](docs/assets/emulator-ii-control-panel.png)
+
+*Az eredeti E-mu Emulator II kezelőpaneljének részlete.*
+
 ## Tervezett architektúra
 
 ```text
