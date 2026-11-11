@@ -25,7 +25,8 @@ Scanner ROM: 0000–1FFF mirrored through 7FFF; RAM: 8000–87FF mirrored throug
 Scanner: ADC at 34 read / 36 write (mirror 81), scan buffer 38 read
 (mirror 81), PIO 50–53 and CTC 60–63 (mirror 8C).
 Main IRQ priority: disk SIO, DMA, CTC, PIO; scanner: CTC then PIO.
-PIO A links CPUs. Scanner PIO B selects scan input; ADC EOC triggers CTC.
+PIO alternate register order is data A, control A, data B, control B
+(50, 51, 52, 53 on the scanner; main base 30). PIO A links CPUs. Scanner PIO B selects scan input; ADC EOC triggers CTC.
 
 Unknown: disk handshake/completion, sound-engine logic, IC135/IC137 PROMs.
 The project models scanner memory and the main CPU/DMA page translation.
