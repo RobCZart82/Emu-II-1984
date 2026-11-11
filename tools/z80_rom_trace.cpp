@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "core/main_memory.hpp"
+#include "core/devices/ctc_programming.hpp"
 #include "core/scanner_memory.hpp"
 #include <z80.h>
 
@@ -63,6 +64,18 @@ public:
                 return;
             }
         }
+        if constexpr (std::is_same_v<Memory, emu::ScannerMemory>) {
+            // Low-byte mirror mask 0x8c maps 60-63 onto the scanner CTC.
+            const auto unmirrored_port = (port & 0xffu) & ~0x8cu;
+            if (unmirrored_port >= 0x60 && unmirrored_port <= 0x63) {
+                const auto result = ctc_.write(static_cast<unsigned>(port & 3u),
+                                               static_cast<std::uint8_t>(value));
+                if (result == emu::CtcProgramming::Result::accepted) return;
+                if (result == emu::CtcProgramming::Result::unsupported_vector_channel)
+                    throw UnmodelledPort{"out", static_cast<std::uint16_t>(port)};
+                throw UnmodelledPort{"ctc_timing", static_cast<std::uint16_t>(port)};
+            }
+        }
         throw UnmodelledPort{"out", static_cast<std::uint16_t>(port)};
     }
 
@@ -78,6 +91,7 @@ private:
     }
 
     Memory& memory_;
+    emu::CtcProgramming ctc_;
 };
 
 template<class Memory>

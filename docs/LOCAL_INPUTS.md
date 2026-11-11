@@ -95,8 +95,8 @@ CSV row records the CPU, step number, program counter and cumulative T-states.
 Each step is one upstream `on_step()` call. DD and FD prefixes can occupy
 their own rows. For `DD 21 34 12`, the prefix row ends at PC 1 with 4
 T-states, and the next row ends at PC 4 with 14 cumulative T-states.
-Main page-select outputs are handled. The trace ends at the first other I/O
-access, access outside mapped main ROM/RAM, HALT or 256 steps per CPU. An unmodelled port row records the partial
+Main page-select outputs and scanner CTC vector/reset programming are handled. The trace ends at the first other I/O
+access, CTC timing activation, access outside mapped main ROM/RAM, HALT or 256 steps per CPU. An unmodelled port row records the partial
 step with no final program counter. The appended CSV field `memory_address`
 records the translated physical address for `unmodelled_memory_read` and
 `unmodelled_memory_write`. Port rows leave it empty. Earlier memory writes in
@@ -109,3 +109,7 @@ reached the 256-step limit at PC 0x000D. Scanner reached an output to port
 (0x60) in the [reference hardware map](HARDWARE_MAP.md).
 The two CPUs are run independently, with shared peripheral timing, IRQ, DMA
 and the floppy/OS boot path still pending.
+
+The [CTC programming front end](CTC_PROGRAMMING.md) advances the scanner trace
+past the recorded step-48 boundary to a PIO output at step 50 (F8DD). Timing,
+CTC readback and interrupts remain future work.
