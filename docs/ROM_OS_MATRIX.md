@@ -20,8 +20,8 @@ as TODO. It is not evidence that either scanner works with every main ROM.
 For each lawful private input, record provenance, permission, local SHA-256,
 version, chosen main/scanner/OS triple and reproducible trace. Keep binaries in
 ignored user-data outside tracked fixtures. A hash does not grant redistribution
-rights. Commit only synthetic fixtures and metadata. No ROM acquisition,
-firmware execution or compatibility claim has been made.
+rights. Commit only synthetic fixtures and metadata. The offline trace observations in LOCAL_INPUTS.md are a later research step.
+ROM/OS compatibility remains unverified.
 
 ## Local research evidence (2026-11-10)
 

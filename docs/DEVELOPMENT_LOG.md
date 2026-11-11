@@ -1,5 +1,14 @@
 # Development log
 
+## DEV-0007 — 2026-11-11 — Repository audit and memory trace boundaries
+
+Audited baseline `3b310fece03bbbed60001ed312c18802d046281d`.
+The offline trace previously continued through unmapped main memory using
+the memory model's 0xFF fallback. Added a mapping query and stop records for
+unmodelled reads and writes, including physical addresses. Tests exercise
+unmapped opcode fetch, data reads, writes and page-select transitions.
+See [audit findings](AUDIT_2026-11-11.md) for scope and remaining work.
+
 ## DEV-0006 — 2026-11-10 — Local input evidence inspector
 
 Added a read-only Python inventory tool with ROM reference-hash identities,

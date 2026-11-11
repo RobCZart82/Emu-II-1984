@@ -20,7 +20,7 @@ expected = [
     ['main', '3', '4', '', '28', 'unmodelled_in', '66'],
     ['scanner', '1', '0', '', '10', 'unmodelled_out', '65386'],
 ]
-assert [list(row.values()) for row in rows] == expected, rows
+assert [list(row.values()) for row in rows] == [row + [''] for row in expected], rows
 for payload in (pair[:-1], pair + b'\0'):
     invalid = subprocess.run(command, input=payload, capture_output=True)
     assert invalid.returncode == 1 and not invalid.stdout
@@ -30,3 +30,19 @@ bounded = subprocess.run(command, input=bytes(8192) + b'\x76' + bytes(8191),
                          capture_output=True, check=True)
 rows = list(csv.DictReader(io.StringIO(bounded.stdout.decode('ascii'))))
 assert len(rows) == 257 and rows[-2]['event'] == 'step_limit' and rows[-2]['step'] == '256' and rows[-1]['event'] == 'halt'
+
+# Stop on opcode fetch, data read, and data write outside the known backing.
+for code, direction, physical in [
+        (bytes([0xc3, 0, 0x28]), 'read', 0x2800),
+        (bytes([0x3a, 0, 0x28]), 'read', 0x2800),
+        (bytes([0x32, 0, 0x28]), 'write', 0x2800),
+        (bytes([0x3e, 1, 0xd3, 0x6a]), 'read', 0x8004)]:
+    payload = code.ljust(8192, b'\0') + b'\x76' + bytes(8191)
+    result = subprocess.run(command, input=payload, capture_output=True, check=True)
+    trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+    main_rows = [row for row in trace if row['cpu'] == 'main']
+    last = main_rows[-1]
+    assert last['event'] == 'unmodelled_memory_' + direction, trace
+    assert int(last['memory_address']) == physical, trace
+    assert last['pc_after'] == '' and last['port'] == '', trace
+    assert trace[-1]['cpu'] == 'scanner' and trace[-1]['event'] == 'halt', trace
