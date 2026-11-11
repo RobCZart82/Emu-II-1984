@@ -8,7 +8,7 @@ and [retained MIT notice](../licenses/KosarevZ80.txt).
 ## What the probe covers
 
 The main-side CPU uses a flat synthetic bus and the scanner CPU uses
-`ScannerMemory`. Each CPU advances one whole instruction at a time. The
+`ScannerMemory`. Each CPU advances by one upstream `on_step()` call. The
 probe interleaves the instances, checks their registers and memory isolation,
 and verifies 7, 13, 11 and 11 T-states for immediate load, memory store,
 input and output. Memory writes and I/O are observed at cumulative ticks
@@ -18,6 +18,11 @@ that both external memory instances and the other CPU retain their state.
 
 ## Integration limits
 
+- DD and FD prefixes consume separate `on_step()` calls at this revision.
+  For example, `DD 21 34 12` (`LD IX,1234h`) advances to PC 1 after 4
+  T-states, then to PC 4 after 14 cumulative T-states. Trace rows and the
+  step limit count these upstream steps. Consumers that count complete
+  instructions must account for prefix state.
 - `on_tick(unsigned)` reports elapsed T-states in batches. Bus callbacks run
   synchronously during the instruction. An instruction can span another
   device's deadline, so alternating calls to `on_step()` is insufficient

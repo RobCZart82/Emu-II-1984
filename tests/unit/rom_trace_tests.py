@@ -46,3 +46,16 @@ for code, direction, physical in [
     assert int(last['memory_address']) == physical, trace
     assert last['pc_after'] == '' and last['port'] == '', trace
     assert trace[-1]['cpu'] == 'scanner' and trace[-1]['event'] == 'halt', trace
+
+# Each DD/FD prefix consumes an upstream step before the indexed instruction.
+for prefix in (0xdd, 0xfd):
+    code = bytes([prefix, 0x21, 0x34, 0x12, 0x76])
+    payload = code.ljust(8192, b'\0') + b'\x76' + bytes(8191)
+    result = subprocess.run(command, input=payload, capture_output=True, check=True)
+    trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+    main_rows = [row for row in trace if row['cpu'] == 'main']
+    assert [(row['step'], row['pc_before'], row['pc_after'], row['t_states'], row['event'])
+            for row in main_rows] == [
+                ('1', '0', '1', '4', 'step'),
+                ('2', '1', '4', '14', 'step'),
+                ('3', '4', '5', '18', 'halt')], trace
