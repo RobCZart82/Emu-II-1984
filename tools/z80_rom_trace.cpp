@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #include "core/main_memory.hpp"
 #include "core/devices/ctc_programming.hpp"
+#include "core/devices/pio_programming.hpp"
 #include "core/scanner_memory.hpp"
 #include <z80.h>
 
@@ -65,8 +66,19 @@ public:
             }
         }
         if constexpr (std::is_same_v<Memory, emu::ScannerMemory>) {
-            // Low-byte mirror mask 0x8c maps 60-63 onto the scanner CTC.
+            // Low-byte mirror mask 0x8c applies to scanner PIO and CTC.
             const auto unmirrored_port = (port & 0xffu) & ~0x8cu;
+            if (unmirrored_port >= 0x50 && unmirrored_port <= 0x53 && (port & 1u) != 0) {
+                // Alternate wiring: bit 1 selects A/B, bit 0 control/data.
+                const auto result = pio_.write_control(static_cast<unsigned>((port >> 1) & 1u),
+                                                      static_cast<std::uint8_t>(value));
+                if (result == emu::PioProgramming::Result::accepted) return;
+                if (result == emu::PioProgramming::Result::requires_io)
+                    throw UnmodelledPort{"pio_mode", static_cast<std::uint16_t>(port)};
+                if (result == emu::PioProgramming::Result::requires_interrupts)
+                    throw UnmodelledPort{"pio_interrupts", static_cast<std::uint16_t>(port)};
+                throw UnmodelledPort{"out", static_cast<std::uint16_t>(port)};
+            }
             if (unmirrored_port >= 0x60 && unmirrored_port <= 0x63) {
                 const auto result = ctc_.write(static_cast<unsigned>(port & 3u),
                                                static_cast<std::uint8_t>(value));
@@ -92,6 +104,7 @@ private:
 
     Memory& memory_;
     emu::CtcProgramming ctc_;
+    emu::PioProgramming pio_;
 };
 
 template<class Memory>
