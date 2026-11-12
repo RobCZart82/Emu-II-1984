@@ -41,7 +41,8 @@ before member decompression and reads are capped as a second boundary. Every
 non-directory member is read for CRC verification, including non-media files.
 Nested archives are inventoried as bytes, not recursively expanded. Encrypted,
 unsupported-compression and corrupt entries are errors. ZIP links, absolute
-member paths and parent traversals are rejected. Filesystem symlinks are not
+member paths (including Windows drive and UNC forms) and parent traversals
+are rejected. Filesystem symlinks are not
 inspected. Duplicate member names remain separate records with member indices.
 
 Directory discovery includes known media/firmware extensions and ZIPs, in stable
@@ -51,7 +52,7 @@ report retain the caller's spelling; archive member names are never output paths
 ## Tests and observed local corpus
 
 Run `python3 tests/unit/input_inspector_tests.py`, or the normal CTest suite.
-Fourteen synthetic Python tests cover identity despite misleading names, size
+Fifteen synthetic Python tests cover identity despite misleading names, size
 boundaries, malformed HFE storage, duplicate ZIP entries, corrupt CRC, path/link
 rejection, resource limits, deterministic reports and CLI error status.
 A corrupt LZMA member is reported alongside later valid members and files.
