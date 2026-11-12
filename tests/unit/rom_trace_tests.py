@@ -4,6 +4,11 @@ import io
 import subprocess
 import sys
 
+def check(condition, details=None):
+    if not condition:
+        raise AssertionError(details if details is not None else 'ROM trace expectation failed')
+
+
 runner = sys.argv[1]
 
 # LD A,0, OUT to the main CPU's low page selector, then unmodelled IN.
@@ -21,16 +26,16 @@ expected = [
     ['scanner', '1', '0', '2', '11', 'step', ''],
     ['scanner', '2', '2', '3', '15', 'halt', ''],
 ]
-assert [list(row.values()) for row in rows] == [row + [''] for row in expected], rows
+check([list(row.values()) for row in rows] == [row + [''] for row in expected], rows)
 for payload in (pair[:-1], pair + b'\0'):
     invalid = subprocess.run(command, input=payload, capture_output=True)
-    assert invalid.returncode == 1 and not invalid.stdout
+    check(invalid.returncode == 1 and not invalid.stdout)
 
 # A NOP-only ROM reaches the cap. HALT ends the other trace immediately.
 bounded = subprocess.run(command, input=bytes(8192) + b'\x76' + bytes(8191),
                          capture_output=True, check=True)
 rows = list(csv.DictReader(io.StringIO(bounded.stdout.decode('ascii'))))
-assert len(rows) == 257 and rows[-2]['event'] == 'step_limit' and rows[-2]['step'] == '256' and rows[-1]['event'] == 'halt'
+check(len(rows) == 257 and rows[-2]['event'] == 'step_limit' and rows[-2]['step'] == '256' and rows[-1]['event'] == 'halt')
 
 # Stop on opcode fetch, data read, and data write outside the known backing.
 for code, direction, physical in [
@@ -43,10 +48,10 @@ for code, direction, physical in [
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
     main_rows = [row for row in trace if row['cpu'] == 'main']
     last = main_rows[-1]
-    assert last['event'] == 'unmodelled_memory_' + direction, trace
-    assert int(last['memory_address']) == physical, trace
-    assert last['pc_after'] == '' and last['port'] == '', trace
-    assert trace[-1]['cpu'] == 'scanner' and trace[-1]['event'] == 'halt', trace
+    check(last['event'] == 'unmodelled_memory_' + direction, trace)
+    check(int(last['memory_address']) == physical, trace)
+    check(last['pc_after'] == '' and last['port'] == '', trace)
+    check(trace[-1]['cpu'] == 'scanner' and trace[-1]['event'] == 'halt', trace)
 
 # Each DD/FD prefix consumes an upstream step before the indexed instruction.
 for prefix in (0xdd, 0xfd):
@@ -55,11 +60,11 @@ for prefix in (0xdd, 0xfd):
     result = subprocess.run(command, input=payload, capture_output=True, check=True)
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
     main_rows = [row for row in trace if row['cpu'] == 'main']
-    assert [(row['step'], row['pc_before'], row['pc_after'], row['t_states'], row['event'])
+    check([(row['step'], row['pc_before'], row['pc_after'], row['t_states'], row['event'])
             for row in main_rows] == [
                 ('1', '0', '1', '4', 'step'),
                 ('2', '1', '4', '14', 'step'),
-                ('3', '4', '5', '18', 'halt')], trace
+                ('3', '4', '5', '18', 'halt')], trace)
 
 # Every low-byte mirror of scanner channel zero accepts vector programming.
 for port in (0x60, 0x64, 0x68, 0x6c, 0xe0, 0xe4, 0xe8, 0xec):
@@ -67,7 +72,7 @@ for port in (0x60, 0x64, 0x68, 0x6c, 0xe0, 0xe4, 0xe8, 0xec):
     result = subprocess.run(command, input=b'\x76' + bytes(8191) + scanner,
                             capture_output=True, check=True)
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
-    assert trace[-1]['event'] == 'halt' and trace[-1]['step'] == '3', trace
+    check(trace[-1]['event'] == 'halt' and trace[-1]['step'] == '3', trace)
 
 # Stop at time-constant loading before running the unimplemented timer.
 scanner = bytes([0x3e, 0xf0, 0xd3, 0xec, 0x3e, 7, 0xd3, 0xec,
@@ -75,9 +80,9 @@ scanner = bytes([0x3e, 0xf0, 0xd3, 0xec, 0x3e, 7, 0xd3, 0xec,
 result = subprocess.run(command, input=b'\x76' + bytes(8191) + scanner,
                         capture_output=True, check=True)
 trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
-assert trace[-1]['event'] == 'unmodelled_ctc_timing', trace
-assert trace[-1]['step'] == '6' and trace[-1]['pc_after'] == '', trace
-assert int(trace[-1]['port']) == 0x01ec, trace
+check(trace[-1]['event'] == 'unmodelled_ctc_timing', trace)
+check(trace[-1]['step'] == '6' and trace[-1]['pc_after'] == '', trace)
+check(int(trace[-1]['port']) == 0x01ec, trace)
 
 # CTC reads and PIO data outputs retain their unsupported boundaries.
 for code, event in [(bytes([0xdb, 0xec]), 'unmodelled_in'),
@@ -85,7 +90,7 @@ for code, event in [(bytes([0xdb, 0xec]), 'unmodelled_in'),
     result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
                             capture_output=True, check=True)
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
-    assert trace[-1]['event'] == event and trace[-1]['step'] == '1', trace
+    check(trace[-1]['event'] == event and trace[-1]['step'] == '1', trace)
 
 # Every PIO control mirror uses alternate A/B wiring and consumes masks first.
 for mirror in (0, 4, 8, 12, 0x80, 0x84, 0x88, 0x8c):
@@ -95,7 +100,7 @@ for mirror in (0, 4, 8, 12, 0x80, 0x84, 0x88, 0x8c):
     result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
                             capture_output=True, check=True)
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
-    assert trace[-1]['event'] == 'halt' and trace[-1]['step'] == '9', trace
+    check(trace[-1]['event'] == 'halt' and trace[-1]['step'] == '9', trace)
 
 # Mode changes and interrupt enable need external pin/timing behavior.
 for value, event in [(0x0f, 'unmodelled_pio_mode'),
@@ -109,9 +114,9 @@ for value, event in [(0x0f, 'unmodelled_pio_mode'),
     result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
                             capture_output=True, check=True)
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
-    assert trace[-1]['event'] == event and trace[-1]['step'] == '2', trace
-    assert int(trace[-1]['port']) == (value << 8) | 0xdd, trace
-    assert trace[-1]['pc_after'] == '', trace
+    check(trace[-1]['event'] == event and trace[-1]['step'] == '2', trace)
+    check(int(trace[-1]['port']) == (value << 8) | 0xdd, trace)
+    check(trace[-1]['pc_after'] == '', trace)
 
 # PIO reads, both data registers and main PIO are still outside this model.
 for code, cpu, event in [(bytes([0xdb, 0xdd]), 'scanner', 'unmodelled_in'),
@@ -125,4 +130,4 @@ for code, cpu, event in [(bytes([0xdb, 0xdd]), 'scanner', 'unmodelled_in'),
                             capture_output=True, check=True)
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
     last = [row for row in trace if row['cpu'] == cpu][-1]
-    assert last['event'] == event and last['step'] == '1', trace
+    check(last['event'] == event and last['step'] == '1', trace)
