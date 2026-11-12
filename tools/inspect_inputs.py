@@ -5,7 +5,7 @@ import argparse
 import hashlib
 import json
 import lzma
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import stat
 import struct
 import sys
@@ -113,7 +113,8 @@ def inspect_file(path):
                     try:
                         member_path = PurePosixPath(member.filename.replace('\\', '/'))
                         mode = member.external_attr >> 16
-                        if member_path.is_absolute() or '..' in member_path.parts or stat.S_ISLNK(mode):
+                        if (member_path.is_absolute() or PureWindowsPath(member.filename).is_absolute()
+                                or '..' in member_path.parts or stat.S_ISLNK(mode)):
                             raise ValueError('unsafe archive member path/type')
                         if member.file_size > MAX_FILE:
                             raise ValueError('archive member exceeds size limit')

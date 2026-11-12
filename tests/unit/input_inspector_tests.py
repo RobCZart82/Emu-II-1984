@@ -143,6 +143,23 @@ class InputInspectorTests(unittest.TestCase):
             self.assertTrue(all(r['errors'] for r in records))
             self.assertEqual(len(list(Path(directory).iterdir())), 1)
 
+    def test_windows_absolute_archive_paths_are_rejected(self):
+        names = ['C:/outside.bin', r'D:\outside.bin',
+                 '//server/share/file.bin', r'\\other-server\share\file.bin']
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'windows-paths.zip'
+            with zipfile.ZipFile(path, 'w') as archive:
+                for name in names:
+                    archive.writestr(name, b'synthetic')
+                archive.writestr('folder/valid.bin', b'valid')
+            records = inspector.inspect_file(path)
+            self.assertEqual(len(records), len(names) + 1)
+            for record in records[:-1]:
+                self.assertEqual(record['errors'], ['unsafe archive member path/type'])
+                self.assertNotIn('sha256', record)
+            self.assertEqual(records[-1]['errors'], [])
+            self.assertIn('sha256', records[-1])
+
     def test_archive_limits_are_checked_before_decompression(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'compressed.zip'
