@@ -21,6 +21,7 @@ Windows/macOS/Linux CI runs both configurations. A configured workflow is not
 proof of success; see its actual run before claiming platform support.
 
 CTest includes the Python input inspector suite and the synthetic ROM trace
-test. See [local input inspection and tracing](LOCAL_INPUTS.md) for the
+test in both normal and optimized Python modes. The optimized entry uses -O
+explicitly on every CI platform. See [local input inspection and tracing](LOCAL_INPUTS.md) for the
 research commands. BUILD_TESTING=OFF does not require Python or test
 dependencies.

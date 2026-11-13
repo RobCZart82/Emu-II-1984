@@ -1,5 +1,12 @@
 # Development log
 
+## DEV-0008 — 2026-11-13 — Optimized Python regression coverage
+
+The ROM trace test now runs through CTest with both normal Python and
+explicit -O. This extends the preceding assertion fix with recurring
+Windows/macOS/Linux coverage in Debug and Release configurations.
+Both entries use the same synthetic trace scenarios and built runner.
+
 ## DEV-0007 — 2026-11-11 — Repository audit and memory trace boundaries
 
 Audited baseline `3b310fece03bbbed60001ed312c18802d046281d`.
