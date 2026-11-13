@@ -1,5 +1,13 @@
 # Development log
 
+## DEV-0009 — 2026-11-13 — PIO mode/direction programming records
+
+The PIO front end now retains requested modes and consumes the mode-3
+direction byte before command decoding. Mode changes clear stale direction
+data and reset clears the programming sequence while preserving vectors.
+The offline trace still stops at mode selection with requires_io.
+Synthetic tests cover command-shaped direction bytes, port isolation and reset.
+
 ## DEV-0008 — 2026-11-13 — Optimized Python regression coverage
 
 The ROM trace test now runs through CTest with both normal Python and
