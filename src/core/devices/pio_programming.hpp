@@ -11,6 +11,9 @@ public:
     enum class Result { accepted, requires_io, requires_interrupts, unsupported_control };
     struct Port {
         std::optional<std::uint8_t> vector;
+        std::optional<std::uint8_t> mode;
+        std::optional<std::uint8_t> direction;
+        bool expects_direction = false;
         std::uint8_t interrupt_control = 0;
         std::uint8_t mask = 0xff;
         bool expects_mask = false;

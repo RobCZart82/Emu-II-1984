@@ -81,3 +81,40 @@ TEST_CASE("PIO modes and unknown controls cannot silently continue a trace") {
         }
     }
 }
+
+TEST_CASE("PIO bit-control direction bytes take precedence over commands") {
+    using Result = emu::PioProgramming::Result;
+    for (const auto value : {0, 0xf8, 0xcf, 0x87, 0x83, 0xff}) {
+        emu::PioProgramming pio;
+        REQUIRE(pio.write_control(0, 0xe0) == Result::accepted);
+        REQUIRE(pio.write_control(0, 0xcf) == Result::requires_io);
+        REQUIRE(pio.port(0).mode == 3);
+        REQUIRE(pio.port(0).expects_direction);
+        REQUIRE(pio.write_control(1, 0xfa) == Result::accepted);
+        REQUIRE(pio.write_control(0, static_cast<std::uint8_t>(value)) == Result::requires_io);
+        REQUIRE(pio.port(0).direction == value);
+        REQUIRE_FALSE(pio.port(0).expects_direction);
+        REQUIRE(pio.port(0).vector == 0xe0);
+        REQUIRE(pio.port(0).interrupt_control == 0);
+        REQUIRE(pio.port(1).vector == 0xfa);
+        REQUIRE_FALSE(pio.port(1).mode.has_value());
+        pio.reset();
+        REQUIRE_FALSE(pio.port(0).mode.has_value());
+        REQUIRE_FALSE(pio.port(0).direction.has_value());
+        REQUIRE_FALSE(pio.port(0).expects_direction);
+        REQUIRE(pio.port(0).vector == 0xe0);
+    }
+}
+
+TEST_CASE("PIO mode changes clear stale direction programming") {
+    using Result = emu::PioProgramming::Result;
+    for (const auto mode : {0, 1, 2, 3}) {
+        emu::PioProgramming pio;
+        REQUIRE(pio.write_control(0, 0xcf) == Result::requires_io);
+        REQUIRE(pio.write_control(0, 0xaa) == Result::requires_io);
+        REQUIRE(pio.write_control(0, static_cast<std::uint8_t>((mode << 6) | 0x0f)) == Result::requires_io);
+        REQUIRE(pio.port(0).mode == mode);
+        REQUIRE_FALSE(pio.port(0).direction.has_value());
+        REQUIRE(pio.port(0).expects_direction == (mode == 3));
+    }
+}

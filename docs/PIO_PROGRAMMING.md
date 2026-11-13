@@ -12,8 +12,10 @@ other control bits. The reset operation clears mask/control programming while
 preserving vector contents. An initially unknown vector is represented by
 an empty optional, not a fabricated address.
 
-This is a programming front end, not a complete PIO. Mode commands return
-`requires_io` without applying a mode or direction sequence. An interrupt-enable
+This is a programming front end, not a complete PIO. Mode commands record the requested mode and return `requires_io`. In mode 3,
+the next control byte is retained as the direction mask regardless of its
+command-shaped bits. A new mode command clears the previous direction mask.
+These records describe programming requests, while pin behavior remains pending. An interrupt-enable
 request returns `requires_interrupts`, conservatively even before a requested
 mask arrives. Unknown commands return `unsupported_control`. Callers must stop
 at every result other than `accepted`.
