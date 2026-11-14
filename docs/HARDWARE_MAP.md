@@ -1,7 +1,9 @@
 # Initial hardware map — M0-02
 
 Evidence: [MAME emu2.cpp at d077ea24f0a7](https://github.com/mamedev/mame/blob/d077ea24f0a73118bee9558bc939b99ae662bfc5/src/mame/emusys/emu2.cpp).
-Research model, not a complete verified hardware specification.
+Research model, not a complete verified hardware specification. Scanner decode
+is refined from the original schematic in [SCANNER_IO.md](SCANNER_IO.md); the
+port list below retains the original reference windows.
 
 Two 4 MHz Z80s; main and scanner have separate address spaces.
 DMA (ports 68–69) and main CPU (6A–6B) each have two 32 KiB page
@@ -33,3 +35,8 @@ The project models scanner memory and the main CPU/DMA page translation.
 Both main-side buses share the same ROM and RAM backing. Unmapped reads return
 0xFF and writes are ignored as a model convention. Clocks and peripheral I/O
 remain future work.
+
+The scanner decoder now models the active-low SA5 PIO and SA4 CTC selects,
+and the SA6-gated IC47 outputs. It reports simultaneous selections instead
+of assuming exclusive devices. The scanner's observed BE output selects
+IC47 Q7 / +SCBVD.D; its receiving protocol remains unimplemented.

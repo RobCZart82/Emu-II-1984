@@ -122,7 +122,7 @@ for value, event in [(0x0f, 'unmodelled_pio_mode'),
 for code, cpu, event in [(bytes([0xdb, 0xdd]), 'scanner', 'unmodelled_in'),
                          (bytes([0xd3, 0x50]), 'scanner', 'unmodelled_out'),
                          (bytes([0xd3, 0x52]), 'scanner', 'unmodelled_out'),
-                         (bytes([0xd3, 0xbe]), 'scanner', 'unmodelled_out'),
+                         (bytes([0xd3, 0xbe]), 'scanner', 'unmodelled_scanner_bvd'),
                          (bytes([0xd3, 0x31]), 'main', 'unmodelled_out')]:
     rom = code.ljust(8192, b'\0')
     halt = b'\x76' + bytes(8191)
@@ -131,3 +131,29 @@ for code, cpu, event in [(bytes([0xdb, 0xdd]), 'scanner', 'unmodelled_in'),
     trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
     last = [row for row in trace if row['cpu'] == cpu][-1]
     check(last['event'] == event and last['step'] == '1', trace)
+
+# IC47 strobes use SA3..SA1, ignore SA0/SA7 and do not emulate a peripheral.
+for output in range(8):
+    event = 'unmodelled_scanner_bvd' if output == 7 else 'unmodelled_scanner_strobe'
+    for mirror in (0, 1, 0x80, 0x81):
+        port = 0x30 | (output << 1) | mirror
+        for opcode in (0xd3, 0xdb):
+            code = bytes([0x3e, 0x3b, opcode, port, 0x76])
+            result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                                    capture_output=True, check=True)
+            trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+            check(trace[-1]['event'] == event and trace[-1]['step'] == '2', trace)
+            check(int(trace[-1]['port']) == 0x3b00 | port, trace)
+            check(trace[-1]['pc_after'] == '', trace)
+
+# Simultaneous PIO/CTC/strobe selects must stop before single-device handling.
+for port in (0x00, 0x11, 0x20, 0x41, 0x80, 0x91, 0xa0, 0xc1):
+    for opcode in (0xd3, 0xdb):
+        # An even byte would otherwise be accepted as a vector by either chip.
+        code = bytes([0x3e, 0xf8, opcode, port, 0x76])
+        result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                                capture_output=True, check=True)
+        trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+        check(trace[-1]['event'] == 'unmodelled_scanner_overlap', trace)
+        check(trace[-1]['step'] == '2' and trace[-1]['pc_after'] == '', trace)
+        check(int(trace[-1]['port']) == 0xf800 | port, trace)

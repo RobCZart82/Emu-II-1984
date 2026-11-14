@@ -119,6 +119,8 @@ CTC readback and interrupts remain future work.
 
 The [PIO programming front end](PIO_PROGRAMMING.md) now passes the step-50
 vector output. Repeated local runs reach step 76, an unsupported output to
-3BBE (PC 0738). Its low byte BE is outside the pinned scanner I/O map;
-its function requires further hardware/firmware research. PIO modes, data
+3BBE (PC 0738). Its low byte BE was outside the pinned MAME scanner I/O map. The original
+schematic now identifies it as IC47 Q7 / +SCBVD.D; see [SCANNER_IO.md](SCANNER_IO.md).
+The trace stops there with `unmodelled_scanner_bvd` pending the receiving circuit.
+Other IC47 strobes and overlapping chip selects also stop with explicit events. PIO modes, data
 transfers, readback and interrupt service are not implemented.

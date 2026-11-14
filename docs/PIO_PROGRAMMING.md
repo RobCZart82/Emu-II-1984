@@ -34,7 +34,7 @@ invalid indices, all control mirrors and explicit unsupported boundaries.
 
 Two verified local Main 2.3 / Scanner 3.1 runs produced identical CSV bytes.
 The scanner passes the previous step-50 F8DD output and reaches step 76,
-PC 0738, T-state 1100, at output 3BBE. Low byte BE is outside the pinned
-scanner map. Its purpose is unresolved; do not assume this is a known device
-or widen an address mirror without evidence. Main remains at step 256,
+PC 0738, T-state 1100, at output 3BBE. The [schematic decoder](SCANNER_IO.md)
+now identifies BE as IC47 Q7 / +SCBVD.D, absent from the pinned MAME map.
+Its receiving protocol is unresolved; the trace stops with `unmodelled_scanner_bvd`. Main remains at step 256,
 PC 000D. These independent CPU probes do not establish a firmware boot.
