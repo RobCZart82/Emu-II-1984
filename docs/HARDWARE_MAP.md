@@ -39,4 +39,6 @@ remain future work.
 The scanner decoder now models the active-low SA5 PIO and SA4 CTC selects,
 and the SA6-gated IC47 outputs. It reports simultaneous selections instead
 of assuming exclusive devices. The scanner's observed BE output selects
-IC47 Q7 / +SCBVD.D; its receiving protocol remains unimplemented.
+IC47 Q7 / +SCBVD.D; its receiving circuit is the write-only LCD. The
+[function-programming subset](LCD_FUNCTION_PROGRAMMING.md) is implemented;
+other LCD commands and electrical/power-up timing remain pending.

@@ -51,10 +51,12 @@ path. Do not replace overlaps with a priority decoder.
 ## Trace boundaries and validation
 
 The trace checks overlaps before invoking any device programming method.
-Overlaps stop as `unmodelled_scanner_overlap`. A sole Q7 selection stops as
-`unmodelled_scanner_bvd`; other sole IC47 outputs stop as
-`unmodelled_scanner_strobe`. These events apply to both reads and writes,
-since IC47 decodes either ordinary I/O cycle. Existing PIO/CTC handling is
+Overlaps stop as `unmodelled_scanner_overlap`. A sole Q7 output now reaches
+the [LCD function front end](LCD_FUNCTION_PROGRAMMING.md);
+Q7 inputs stop because the peripheral is write-only. Other sole IC47 outputs stop as
+`unmodelled_scanner_strobe`. IC47 decodes either ordinary I/O cycle; a CPU
+read does not make the LCD
+readable because its R/W pin is grounded. Existing PIO/CTC handling is
 retained for their non-overlapping windows. No strobe is silently ignored.
 
 Tests enumerate all 65536 port values against an independent selection truth
@@ -62,9 +64,9 @@ table, retain ordinary PIO/CTC mirrors, and exercise every IC47 output and
 SA0/SA7 alias through read/write synthetic CPU programs. Overlap programs
 verify the trace stops instead of accepting a vector write.
 
-Two verified Main 2.3 / Scanner 3.1 runs remain byte-identical. Main stops
+The initial decoder-only Main 2.3 / Scanner 3.1 runs were byte-identical. Main stopped
 at step 256, PC 000D; scanner at step 76, PC 0738, T-state 1100, port 3BBE.
-The scanner event is now `unmodelled_scanner_bvd` rather than a generic output.
-No additional ROM steps, peripheral transfer, firmware boot or audio is claimed.
-Next trace CN3's receiving circuit and model its latching/handshake before
-allowing this I/O instruction to complete.
+This was the decoder-only boundary. CN3.25 has since been traced to the LCD
+enable input, and [function programming](LCD_FUNCTION_PROGRAMMING.md) now
+passes step 76 and reaches the next LCD command at step 110. Power-up and
+electrical timing remain unverified; no firmware boot or audio is claimed.

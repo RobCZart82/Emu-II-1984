@@ -1,5 +1,21 @@
 # Development log
 
+## DEV-0011 — 2026-11-14 — LCD function programming
+
+Traced +SCBVD.D to the left-panel LCD enable, SA0 to register select, and
+confirmed the LCD R/W pin is grounded. Added an HD44780-compatible research
+function-set front end with 8/4-bit transfers and an explicit nominal timing
+guard. Cold power-up and electrical timing are not simulated. Unsupported
+commands/data and CPU reads remain explicit boundaries. See
+LCD_FUNCTION_PROGRAMMING.md for source pages and assumptions.
+
+All 36 CTest cases passed locally in Debug and Release; the dependency-free
+core builds. Synthetic tests cover transfer width, nibble sequencing, address
+versus data-bit selection, deadlines, reset, reversed time and overflow. Two
+verified local ROM runs are byte-identical. Scanner advances from step 76 to
+110, stopping at command 0C (port 0CBE); main remains at its 256-step limit.
+No firmware, manual or external implementation was added.
+
 ## DEV-0010 — 2026-11-14 — Schematic-based scanner I/O decoder
 
 Identified the previously unknown BE output as IC47 Q7 / +SCBVD.D on the

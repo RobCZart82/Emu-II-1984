@@ -122,7 +122,7 @@ for value, event in [(0x0f, 'unmodelled_pio_mode'),
 for code, cpu, event in [(bytes([0xdb, 0xdd]), 'scanner', 'unmodelled_in'),
                          (bytes([0xd3, 0x50]), 'scanner', 'unmodelled_out'),
                          (bytes([0xd3, 0x52]), 'scanner', 'unmodelled_out'),
-                         (bytes([0xd3, 0xbe]), 'scanner', 'unmodelled_scanner_bvd'),
+                         (bytes([0xd3, 0xbe]), 'scanner', 'unmodelled_lcd_command'),
                          (bytes([0xd3, 0x31]), 'main', 'unmodelled_out')]:
     rom = code.ljust(8192, b'\0')
     halt = b'\x76' + bytes(8191)
@@ -132,9 +132,8 @@ for code, cpu, event in [(bytes([0xdb, 0xdd]), 'scanner', 'unmodelled_in'),
     last = [row for row in trace if row['cpu'] == cpu][-1]
     check(last['event'] == event and last['step'] == '1', trace)
 
-# IC47 strobes use SA3..SA1, ignore SA0/SA7 and do not emulate a peripheral.
+# IC47 ignores SA0/SA7; the LCD independently uses SA0 as register select.
 for output in range(8):
-    event = 'unmodelled_scanner_bvd' if output == 7 else 'unmodelled_scanner_strobe'
     for mirror in (0, 1, 0x80, 0x81):
         port = 0x30 | (output << 1) | mirror
         for opcode in (0xd3, 0xdb):
@@ -142,9 +141,15 @@ for output in range(8):
             result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
                                     capture_output=True, check=True)
             trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
-            check(trace[-1]['event'] == event and trace[-1]['step'] == '2', trace)
-            check(int(trace[-1]['port']) == 0x3b00 | port, trace)
-            check(trace[-1]['pc_after'] == '', trace)
+            if output == 7 and opcode == 0xd3 and not (port & 1):
+                check(trace[-1]['event'] == 'halt' and trace[-1]['step'] == '3', trace)
+            else:
+                event = 'unmodelled_scanner_strobe'
+                if output == 7:
+                    event = 'unmodelled_lcd_bus_read' if opcode == 0xdb else 'unmodelled_lcd_data'
+                check(trace[-1]['event'] == event and trace[-1]['step'] == '2', trace)
+                check(int(trace[-1]['port']) == 0x3b00 | port, trace)
+                check(trace[-1]['pc_after'] == '', trace)
 
 # Simultaneous PIO/CTC/strobe selects must stop before single-device handling.
 for port in (0x00, 0x11, 0x20, 0x41, 0x80, 0x91, 0xa0, 0xc1):
@@ -157,3 +162,32 @@ for port in (0x00, 0x11, 0x20, 0x41, 0x80, 0x91, 0xa0, 0xc1):
         check(trace[-1]['event'] == 'unmodelled_scanner_overlap', trace)
         check(trace[-1]['step'] == '2' and trace[-1]['pc_after'] == '', trace)
         check(int(trace[-1]['port']) == 0xf800 | port, trace)
+
+# LCD RS comes from SA0, independently of data bit 2.
+for port in (0x3e, 0x3f, 0xbe, 0xbf):
+    for bus in (0x3b, 0x3f, 0x01):
+        if port & 1:
+            event = 'unmodelled_lcd_data'
+        else:
+            event = 'halt' if (bus & 0xe0) == 0x20 else 'unmodelled_lcd_command'
+        code = bytes([0x3e, bus, 0xd3, port, 0x76])
+        result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                                capture_output=True, check=True)
+        trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+        check(trace[-1]['event'] == event, trace)
+
+# Two immediate function writes violate the modeled LCD execution interval.
+code = bytes([0x3e, 0x3b, 0xd3, 0xbe, 0xd3, 0x3e, 0x76])
+result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                        capture_output=True, check=True)
+trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+check(trace[-1]['event'] == 'unmodelled_lcd_busy' and trace[-1]['step'] == '3', trace)
+
+# A spaced 8-to-4-bit transition and two-nibble function set complete.
+# 40 NOPs provide 160 T-states between completed commands.
+code = bytes([0x3e, 0x2b, 0xd3, 0xbe]) + bytes(40)
+code += bytes([0xd3, 0xbe, 0x3e, 0x8b, 0xd3, 0x3e, 0x76])
+result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                        capture_output=True, check=True)
+trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+check(trace[-1]['event'] == 'halt', trace)

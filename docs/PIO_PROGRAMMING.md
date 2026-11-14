@@ -36,5 +36,6 @@ Two verified local Main 2.3 / Scanner 3.1 runs produced identical CSV bytes.
 The scanner passes the previous step-50 F8DD output and reaches step 76,
 PC 0738, T-state 1100, at output 3BBE. The [schematic decoder](SCANNER_IO.md)
 now identifies BE as IC47 Q7 / +SCBVD.D, absent from the pinned MAME map.
-Its receiving protocol is unresolved; the trace stops with `unmodelled_scanner_bvd`. Main remains at step 256,
+The [LCD function front end](LCD_FUNCTION_PROGRAMMING.md) now handles that
+output, reaching the next unsupported LCD command at step 110. Main remains at step 256,
 PC 000D. These independent CPU probes do not establish a firmware boot.
