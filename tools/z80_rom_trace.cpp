@@ -2,6 +2,7 @@
 #include "core/main_memory.hpp"
 #include "core/devices/ctc_programming.hpp"
 #include "core/devices/pio_programming.hpp"
+#include "core/devices/lcd_function_programming.hpp"
 #include "core/scanner_memory.hpp"
 #include "core/scanner_io.hpp"
 #include <z80.h>
@@ -55,7 +56,9 @@ public:
 
     z80::fast_u8 on_input(z80::fast_u16 port) {
         if constexpr (std::is_same_v<Memory, emu::ScannerMemory>) {
-            (void)scanner_selection(static_cast<std::uint16_t>(port));
+            const auto selected = scanner_selection(static_cast<std::uint16_t>(port));
+            if (selected.strobe == emu::ScannerStrobe::bvd)
+                throw UnmodelledPort{"lcd_bus_read", static_cast<std::uint16_t>(port)};
         }
         throw UnmodelledPort{"in", static_cast<std::uint16_t>(port)};
     }
@@ -71,6 +74,15 @@ public:
         }
         if constexpr (std::is_same_v<Memory, emu::ScannerMemory>) {
             const auto selected = scanner_selection(static_cast<std::uint16_t>(port));
+            if (selected.strobe == emu::ScannerStrobe::bvd) {
+                using Result = emu::LcdFunctionProgramming::Result;
+                const auto result = lcd_.write((port & 1u) != 0, static_cast<std::uint8_t>(value), ticks);
+                if (result == Result::accepted) return;
+                const char* boundary = result == Result::busy ? "lcd_busy"
+                    : result == Result::invalid_time ? "lcd_time"
+                    : result == Result::requires_data ? "lcd_data" : "lcd_command";
+                throw UnmodelledPort{boundary, static_cast<std::uint16_t>(port)};
+            }
             if (selected.pio && (port & 1u) != 0) {
                 // Alternate wiring: bit 1 selects A/B, bit 0 control/data.
                 const auto result = pio_.write_control(static_cast<unsigned>((port >> 1) & 1u),
@@ -102,9 +114,7 @@ private:
         const auto selected = emu::decode_scanner_io(port);
         // Stop before applying any single-device side effect on overlapping selects.
         if (selected.overlaps()) throw UnmodelledPort{"scanner_overlap", port};
-        if (selected.strobe) {
-            if (*selected.strobe == emu::ScannerStrobe::bvd)
-                throw UnmodelledPort{"scanner_bvd", port};
+        if (selected.strobe && *selected.strobe != emu::ScannerStrobe::bvd) {
             throw UnmodelledPort{"scanner_strobe", port};
         }
         return selected;
@@ -120,6 +130,7 @@ private:
     Memory& memory_;
     emu::CtcProgramming ctc_;
     emu::PioProgramming pio_;
+    emu::LcdFunctionProgramming lcd_;
 };
 
 template<class Memory>

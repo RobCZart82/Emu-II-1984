@@ -23,9 +23,10 @@ page selectors now have independent synthetic tests.
    offline startup tracing are implemented (see LOCAL_INPUTS.md). The trace
    stops at unmodelled memory or I/O. Scanner CTC programming is now handled
    through a timing boundary (see CTC_PROGRAMMING.md). Early scanner PIO
-   control programming is also handled (see PIO_PROGRAMMING.md). Investigate
-   the receiving circuit for scanner +SCBVD.D (BE now decoded; see
-   SCANNER_IO.md), then implement PIO modes/data, CTC
+   control programming is also handled (see PIO_PROGRAMMING.md). The scanner
+   +SCBVD.D signal reaches the write-only LCD; function
+   programming is implemented (see LCD_FUNCTION_PROGRAMMING.md). Next add
+   remaining LCD commands and validate power-up/timing, then PIO modes/data, CTC
    counting/IRQ and shared CPU/device timing, and verify PROM wiring.
 3. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
    behavior (M4), host integration (M5), and release validation (M6).
