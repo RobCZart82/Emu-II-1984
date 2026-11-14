@@ -24,7 +24,8 @@ page selectors now have independent synthetic tests.
    stops at unmodelled memory or I/O. Scanner CTC programming is now handled
    through a timing boundary (see CTC_PROGRAMMING.md). Early scanner PIO
    control programming is also handled (see PIO_PROGRAMMING.md). Investigate
-   the newly reached scanner output BE, then implement PIO modes/data, CTC
+   the receiving circuit for scanner +SCBVD.D (BE now decoded; see
+   SCANNER_IO.md), then implement PIO modes/data, CTC
    counting/IRQ and shared CPU/device timing, and verify PROM wiring.
 3. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
    behavior (M4), host integration (M5), and release validation (M6).

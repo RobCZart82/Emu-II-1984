@@ -3,6 +3,7 @@
 #include "core/devices/ctc_programming.hpp"
 #include "core/devices/pio_programming.hpp"
 #include "core/scanner_memory.hpp"
+#include "core/scanner_io.hpp"
 #include <z80.h>
 
 #include <array>
@@ -53,6 +54,9 @@ public:
     }
 
     z80::fast_u8 on_input(z80::fast_u16 port) {
+        if constexpr (std::is_same_v<Memory, emu::ScannerMemory>) {
+            (void)scanner_selection(static_cast<std::uint16_t>(port));
+        }
         throw UnmodelledPort{"in", static_cast<std::uint16_t>(port)};
     }
 
@@ -66,9 +70,8 @@ public:
             }
         }
         if constexpr (std::is_same_v<Memory, emu::ScannerMemory>) {
-            // Low-byte mirror mask 0x8c applies to scanner PIO and CTC.
-            const auto unmirrored_port = (port & 0xffu) & ~0x8cu;
-            if (unmirrored_port >= 0x50 && unmirrored_port <= 0x53 && (port & 1u) != 0) {
+            const auto selected = scanner_selection(static_cast<std::uint16_t>(port));
+            if (selected.pio && (port & 1u) != 0) {
                 // Alternate wiring: bit 1 selects A/B, bit 0 control/data.
                 const auto result = pio_.write_control(static_cast<unsigned>((port >> 1) & 1u),
                                                       static_cast<std::uint8_t>(value));
@@ -79,7 +82,7 @@ public:
                     throw UnmodelledPort{"pio_interrupts", static_cast<std::uint16_t>(port)};
                 throw UnmodelledPort{"out", static_cast<std::uint16_t>(port)};
             }
-            if (unmirrored_port >= 0x60 && unmirrored_port <= 0x63) {
+            if (selected.ctc) {
                 const auto result = ctc_.write(static_cast<unsigned>(port & 3u),
                                                static_cast<std::uint8_t>(value));
                 if (result == emu::CtcProgramming::Result::accepted) return;
@@ -95,6 +98,18 @@ public:
     std::uint64_t ticks = 0;
 
 private:
+    static emu::ScannerIoSelection scanner_selection(std::uint16_t port) {
+        const auto selected = emu::decode_scanner_io(port);
+        // Stop before applying any single-device side effect on overlapping selects.
+        if (selected.overlaps()) throw UnmodelledPort{"scanner_overlap", port};
+        if (selected.strobe) {
+            if (*selected.strobe == emu::ScannerStrobe::bvd)
+                throw UnmodelledPort{"scanner_bvd", port};
+            throw UnmodelledPort{"scanner_strobe", port};
+        }
+        return selected;
+    }
+
     void check_memory(std::uint16_t address, const char* direction) const {
         if (!memory_.is_mapped(emu::MainMemory::Bus::cpu, address)) {
             throw UnmodelledMemory{direction,

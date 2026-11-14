@@ -31,7 +31,7 @@ if(BUILD_TESTING)
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/rom_trace_tests.py $<TARGET_FILE:z80_rom_trace>)
   add_test(NAME z80_rom_trace_optimized COMMAND ${Python3_EXECUTABLE} -O
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit/rom_trace_tests.py $<TARGET_FILE:z80_rom_trace>)
-  add_executable(core_tests tests/unit/pio_programming_tests.cpp tests/unit/ctc_programming_tests.cpp tests/unit/scheduler_tests.cpp tests/unit/core_tests.cpp tests/unit/main_memory_tests.cpp tests/unit/z80_probe_tests.cpp)
+  add_executable(core_tests tests/unit/scanner_io_tests.cpp tests/unit/pio_programming_tests.cpp tests/unit/ctc_programming_tests.cpp tests/unit/scheduler_tests.cpp tests/unit/core_tests.cpp tests/unit/main_memory_tests.cpp tests/unit/z80_probe_tests.cpp)
   target_include_directories(core_tests SYSTEM PRIVATE ${kosarevz80_SOURCE_DIR})
   target_link_libraries(core_tests PRIVATE emu_core Catch2::Catch2WithMain)
   include(${catch2_SOURCE_DIR}/extras/Catch.cmake)

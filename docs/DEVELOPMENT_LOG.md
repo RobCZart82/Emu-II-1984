@@ -1,5 +1,20 @@
 # Development log
 
+## DEV-0010 — 2026-11-14 — Schematic-based scanner I/O decoder
+
+Identified the previously unknown BE output as IC47 Q7 / +SCBVD.D on the
+original scanner CPU schematic. Added ordinary-cycle chip-select decoding,
+including overlapping PIO/CTC/IC47 selects. The offline trace stops explicitly
+at strobes or overlaps before applying single-device side effects. The
+receiving CN3 circuit remains a boundary; no additional ROM steps are claimed.
+Source identity, pin derivation and next work are recorded in SCANNER_IO.md.
+
+Validation: all 33 CTest cases passed locally in Debug and Release, including
+normal/optimized Python trace suites; BUILD_TESTING=OFF core builds. Decode
+tests enumerate all 65536 ports, and synthetic CPU tests cover each strobe's
+read/write mirrors and overlapping selections. Two verified local ROM traces
+are byte-identical. No firmware, PDF or external implementation was committed.
+
 ## DEV-0009 — 2026-11-13 — PIO mode/direction programming records
 
 The PIO front end now retains requested modes and consumes the mode-3
