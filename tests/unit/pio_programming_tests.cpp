@@ -70,7 +70,9 @@ TEST_CASE("PIO modes and unknown controls cannot silently continue a trace") {
     for (unsigned index = 0; index < 2; ++index) {
         for (const auto mode : {0x0f, 0x4f, 0x8f, 0xcf, 0xff}) {
             emu::PioProgramming pio;
-            REQUIRE(pio.write_control(index, static_cast<std::uint8_t>(mode)) == Result::requires_io);
+            const auto expected = index == 1 && mode == 0x8f
+                ? Result::unsupported_control : Result::requires_io;
+            REQUIRE(pio.write_control(index, static_cast<std::uint8_t>(mode)) == expected);
             REQUIRE_FALSE(pio.port(index).expects_mask);
         }
         for (const auto control : {0x01, 0x05, 0x09, 0x0b, 0x0d}) {
@@ -116,5 +118,35 @@ TEST_CASE("PIO mode changes clear stale direction programming") {
         REQUIRE(pio.port(0).mode == mode);
         REQUIRE_FALSE(pio.port(0).direction.has_value());
         REQUIRE(pio.port(0).expects_direction == (mode == 3));
+    }
+}
+
+TEST_CASE("PIO B rejects every mode-2 command without changing programming state") {
+    using Result = emu::PioProgramming::Result;
+    for (const auto command : {0x8f, 0x9f, 0xaf, 0xbf}) {
+        emu::PioProgramming pio;
+        REQUIRE(pio.write_control(1, 0xfa) == Result::accepted);
+        REQUIRE(pio.write_control(1, 0xcf) == Result::requires_io);
+        REQUIRE(pio.write_control(1, 0x55) == Result::requires_io);
+        REQUIRE(pio.write_control(1, 0x67) == Result::accepted);
+        const auto before = pio.port(1);
+        REQUIRE(pio.write_control(1, static_cast<std::uint8_t>(command)) == Result::unsupported_control);
+        const auto after = pio.port(1);
+        REQUIRE(after.vector == before.vector);
+        REQUIRE(after.mode == before.mode);
+        REQUIRE(after.direction == before.direction);
+        REQUIRE(after.expects_direction == before.expects_direction);
+        REQUIRE(after.mask == before.mask);
+        REQUIRE(after.expects_mask == before.expects_mask);
+        REQUIRE(after.interrupt_control == before.interrupt_control);
+        REQUIRE(pio.write_control(0, static_cast<std::uint8_t>(command)) == Result::requires_io);
+        REQUIRE(pio.port(0).mode == 2);
+        // The same bytes remain valid payloads when a direction/mask is pending.
+        REQUIRE(pio.write_control(1, 0xcf) == Result::requires_io);
+        REQUIRE(pio.write_control(1, static_cast<std::uint8_t>(command)) == Result::requires_io);
+        REQUIRE(pio.port(1).direction == command);
+        REQUIRE(pio.write_control(1, 0x17) == Result::accepted);
+        REQUIRE(pio.write_control(1, static_cast<std::uint8_t>(command)) == Result::accepted);
+        REQUIRE(pio.port(1).mask == command);
     }
 }

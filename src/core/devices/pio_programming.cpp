@@ -17,6 +17,8 @@ PioProgramming::Result PioProgramming::write_control(unsigned index, std::uint8_
     } else {
         switch (value & 0x0f) {
         case 0x0f:
+            // Bidirectional mode is available on port A only.
+            if (index == 1 && (value >> 6) == 2) return Result::unsupported_control;
             state.mode = static_cast<std::uint8_t>(value >> 6);
             state.direction.reset();
             state.expects_direction = *state.mode == 3;

@@ -39,3 +39,9 @@ now identifies BE as IC47 Q7 / +SCBVD.D, absent from the pinned MAME map.
 The [LCD function front end](LCD_FUNCTION_PROGRAMMING.md) now handles that
 output, reaching the next unsupported LCD command at step 110. Main remains at step 256,
 PC 000D. These independent CPU probes do not establish a firmware boot.
+
+Mode 2 is available only on port A (ZiLOG manual chapter 4.2). Port B mode-2
+commands, including all values of ignored bits 5-4, return
+`unsupported_control` without changing the programming record. Pending mask
+or direction bytes take precedence and are not rejected as mode commands.
+The trace retains its generic `unmodelled_out` boundary for this request.

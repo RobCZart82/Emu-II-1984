@@ -191,3 +191,12 @@ result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, 
                         capture_output=True, check=True)
 trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
 check(trace[-1]['event'] == 'halt', trace)
+
+# Port B rejects mode 2 on every control mirror, including ignored mode bits.
+for mirror in (0, 4, 8, 12, 0x80, 0x84, 0x88, 0x8c):
+    for value in (0x8f, 0x9f, 0xaf, 0xbf):
+        code = bytes([0x3e, value, 0xd3, 0x53 | mirror, 0x76])
+        result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                                capture_output=True, check=True)
+        trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+        check(trace[-1]['event'] == 'unmodelled_out' and trace[-1]['step'] == '2', trace)
