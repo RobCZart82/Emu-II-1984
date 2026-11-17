@@ -15,11 +15,17 @@ LcdFunctionProgramming::Result LcdFunctionProgramming::write(bool data_register,
     }
     const auto command = eight_bit_ ? bus
         : static_cast<std::uint8_t>(*high_nibble_ | (bus >> 4));
-    if ((command & 0xe0) != 0x20) return Result::requires_command;
+    const bool function_set = (command & 0xe0) == 0x20;
+    const bool display_control = (command & 0xf8) == 0x08;
+    if (!function_set && !display_control) return Result::requires_command;
     if (tick > std::numeric_limits<std::uint64_t>::max() - function_ticks)
         return Result::invalid_time;
-    function_ = command;
-    eight_bit_ = (command & 0x10) != 0;
+    if (function_set) {
+        function_ = command;
+        eight_bit_ = (command & 0x10) != 0;
+    } else {
+        display_control_ = static_cast<std::uint8_t>(command & 7);
+    }
     high_nibble_.reset();
     last_tick_ = tick;
     ready_at_ = tick + function_ticks;

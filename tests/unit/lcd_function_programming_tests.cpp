@@ -85,3 +85,29 @@ TEST_CASE("LCD time checks preserve state at reverse and overflow boundaries") {
     REQUIRE(other.write(false, 0x3f, 148) == Result::accepted);
     REQUIRE(other.function() == 0x3f);
 }
+
+TEST_CASE("LCD display control retains D C B without changing function programming") {
+    using Result = emu::LcdFunctionProgramming::Result;
+    for (unsigned bits = 0; bits < 8; ++bits) {
+        emu::LcdFunctionProgramming lcd;
+        REQUIRE_FALSE(lcd.display_control().has_value());
+        REQUIRE(lcd.write(false, 0x38, 0) == Result::accepted);
+        REQUIRE(lcd.write(false, static_cast<std::uint8_t>(8 | bits), 148) == Result::accepted);
+        REQUIRE(lcd.display_control() == bits);
+        REQUIRE(lcd.function() == 0x38);
+        REQUIRE(lcd.eight_bit());
+        REQUIRE(lcd.ready_at() == 296);
+        REQUIRE(lcd.write(false, 8, 295) == Result::busy);
+        REQUIRE(lcd.display_control() == bits);
+        lcd.reset();
+        REQUIRE_FALSE(lcd.display_control().has_value());
+        REQUIRE(lcd.write(false, 0x28, 0) == Result::accepted);
+        REQUIRE(lcd.write(false, 0, 148) == Result::accepted);
+        REQUIRE_FALSE(lcd.display_control().has_value());
+        REQUIRE(lcd.write(false, static_cast<std::uint8_t>((8 | bits) << 4), 149) == Result::accepted);
+        REQUIRE(lcd.display_control() == bits);
+        REQUIRE(lcd.function() == 0x28);
+        REQUIRE_FALSE(lcd.eight_bit());
+        REQUIRE_FALSE(lcd.pending_nibble().has_value());
+    }
+}

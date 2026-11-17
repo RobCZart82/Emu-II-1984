@@ -200,3 +200,11 @@ for mirror in (0, 4, 8, 12, 0x80, 0x84, 0x88, 0x8c):
                                 capture_output=True, check=True)
         trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
         check(trace[-1]['event'] == 'unmodelled_out' and trace[-1]['step'] == '2', trace)
+
+# Display-control command completes, then an unsupported clear remains a boundary.
+code = bytes([0x3e, 0x0c, 0xd3, 0xbe]) + bytes(40)
+code += bytes([0x3e, 1, 0xd3, 0xbe, 0x76])
+result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, b'\0'),
+                        capture_output=True, check=True)
+trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+check(trace[-1]['event'] == 'unmodelled_lcd_command' and trace[-1]['step'] == '44', trace)
