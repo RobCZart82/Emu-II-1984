@@ -23,7 +23,10 @@ installed controller and oscillator have not been measured or identified.
 
 ## Implemented subset
 
-`LcdFunctionProgramming` models function-set writes only. In 8-bit mode a
+`LcdFunctionProgramming` models function-set and display-control writes. Display control (08–0F)
+retains D/C/B in bits 2/1/0 through display_control(), without changing bus width
+or the function record. The same nominal 148-tick execution guard applies.
+There is no rendered cursor, blink or display yet. It In 8-bit mode a
 whole byte is decoded. In 4-bit mode the upper nibble of two consecutive
 control writes forms a command; lower bus bits are ignored. Bus-width changes
 apply only when the command is complete. Raw function bits are retained;
@@ -67,3 +70,11 @@ Scanner step 76 now completes at PC 073A and T-state 1101. It reaches step
 This advances initialization; it does not establish cold boot, display text
 or audio. Next implement display control and the remaining LCD commands,
 then validate the power-up/timing assumptions against hardware evidence.
+
+## Display-control extension
+
+The 0C command now completes. Two repeated verified local runs reach scanner
+step 129, PC 072B, T-state 1659, port 2ABF and stop as
+`unmodelled_lcd_data`. Main remains at step 256. All eight D/C/B combinations
+are tested in 8- and 4-bit transfers, including reset, partial transfers and
+busy-state preservation. Next implement character-memory/data writes.
