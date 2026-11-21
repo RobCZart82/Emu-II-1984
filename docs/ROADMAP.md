@@ -26,7 +26,7 @@ page selectors now have independent synthetic tests.
    control programming is also handled (see PIO_PROGRAMMING.md). The scanner
    +SCBVD.D signal reaches the write-only LCD; function
    programming is implemented (see LCD_FUNCTION_PROGRAMMING.md). Next add
-   LCD character-memory/data writes (display control is implemented) and validate power-up/timing, then PIO modes/data, CTC
+   remaining LCD commands and validate power-up/timing (character-memory writes are implemented), then PIO modes/data, CTC
    counting/IRQ and shared CPU/device timing, and verify PROM wiring.
 3. Reconstruct disk/OS flow (M2), then digital voices (M3), measured analog
    behavior (M4), host integration (M5), and release validation (M6).

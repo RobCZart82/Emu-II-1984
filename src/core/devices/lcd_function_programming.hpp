@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 #pragma once
+#include <array>
 #include <cstdint>
 #include <optional>
 
@@ -17,9 +18,16 @@ public:
     [[nodiscard]] std::optional<std::uint8_t> function() const noexcept { return function_; }
     [[nodiscard]] std::optional<std::uint8_t> pending_nibble() const noexcept { return high_nibble_; }
     [[nodiscard]] std::uint64_t ready_at() const noexcept { return ready_at_; }
+    [[nodiscard]] std::uint8_t address() const noexcept { return address_; }
+    [[nodiscard]] std::uint8_t character(unsigned address) const { return ddram_.at(address); }
+    LcdFunctionProgramming() noexcept { ddram_.fill(0x20); }
     void reset() noexcept { *this = LcdFunctionProgramming{}; }
 private:
     std::optional<std::uint8_t> display_control_;
+    std::array<std::uint8_t, 128> ddram_{};
+    std::uint8_t address_ = 0;
+    bool increment_ = true;
+    bool pending_data_ = false;
     bool eight_bit_ = true;
     std::optional<std::uint8_t> function_;
     std::optional<std::uint8_t> high_nibble_;

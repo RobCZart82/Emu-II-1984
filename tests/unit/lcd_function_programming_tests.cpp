@@ -111,3 +111,28 @@ TEST_CASE("LCD display control retains D C B without changing function programmi
         REQUIRE_FALSE(lcd.pending_nibble().has_value());
     }
 }
+
+TEST_CASE("LCD character writes assemble nibbles and cross the two-line address gap") {
+    emu::LcdFunctionProgramming lcd;
+    using Result = emu::LcdFunctionProgramming::Result;
+    REQUIRE(lcd.write(false, 0x28, 0) == Result::accepted);
+    REQUIRE(lcd.write(false, 0xa0, 148) == Result::accepted);
+    REQUIRE(lcd.write(false, 0x70, 149) == Result::accepted);
+    REQUIRE(lcd.address() == 0x27);
+    REQUIRE(lcd.write(true, 0x40, 297) == Result::accepted);
+    REQUIRE(lcd.character(0x27) == 0x20);
+    REQUIRE(lcd.write(false, 0x10, 298) == Result::requires_command);
+    REQUIRE(lcd.write(true, 0x10, 298) == Result::accepted);
+    REQUIRE(lcd.character(0x27) == 0x41);
+    REQUIRE(lcd.address() == 0x40);
+    REQUIRE(lcd.write(true, 0x40, 461) == Result::busy);
+    REQUIRE(lcd.write(false, 0, 462) == Result::accepted);
+    REQUIRE(lcd.write(false, 0x40, 463) == Result::accepted);
+    REQUIRE(lcd.write(true, 0x40, 611) == Result::accepted);
+    REQUIRE(lcd.write(true, 0x20, 612) == Result::accepted);
+    REQUIRE(lcd.character(0x40) == 0x42);
+    REQUIRE(lcd.address() == 0x27);
+    lcd.reset();
+    REQUIRE(lcd.address() == 0);
+    REQUIRE(lcd.character(0x27) == 0x20);
+}
