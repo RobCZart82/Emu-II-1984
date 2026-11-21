@@ -23,7 +23,7 @@ installed controller and oscillator have not been measured or identified.
 
 ## Implemented subset
 
-`LcdFunctionProgramming` models function-set and display-control writes. Display control (08–0F)
+`LcdFunctionProgramming` models function-set, display-control and character-memory writes. Display control (08–0F)
 retains D/C/B in bits 2/1/0 through display_control(), without changing bus width
 or the function record. The same nominal 148-tick execution guard applies.
 There is no rendered cursor, blink or display yet. It In 8-bit mode a
@@ -44,7 +44,7 @@ This is not a measurement of the original module's oscillator. A partial
 the upstream CPU output callback as its transaction time; electrical enable
 edges, pulse widths and setup/hold times are not resolved.
 
-Other commands, data writes, too-early writes, non-monotonic timestamps and
+Unsupported commands or data transfers, too-early writes, non-monotonic timestamps and
 deadline overflow return explicit boundaries without changing model state.
 Callers must stop at a result other than `accepted`. reset() restores the
 research convention, not a validated hardware reset sequence.
@@ -77,4 +77,17 @@ The 0C command now completes. Two repeated verified local runs reach scanner
 step 129, PC 072B, T-state 1659, port 2ABF and stop as
 `unmodelled_lcd_data`. Main remains at step 256. All eight D/C/B combinations
 are tested in 8- and 4-bit transfers, including reset, partial transfers and
-busy-state preservation. Next implement character-memory/data writes.
+busy-state preservation. That was the boundary before character-memory support.
+
+## Character memory
+
+The model initializes DDRAM with spaces and the counter at zero. Data writes
+require an observed function set. DDRAM address commands and non-shifting
+entry modes select where data goes and how the counter moves. In two-line
+mode the counter crosses between 27 and 40 hex and wraps between 67 and 00.
+Four-bit writes require both halves to target the same register. The nominal
+data-write guard is 164 T-states, including 4 microseconds for address update
+(Hitachi Table 6). CGRAM, clear/home and display shifts remain boundaries.
+
+Two repeated verified local ROM traces pass the data write at scanner step
+129 and reach the 256-step limit at PC 072F (2997 T-states).
