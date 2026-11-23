@@ -208,3 +208,16 @@ result = subprocess.run(command, input=b'\x76' + bytes(8191) + code.ljust(8192, 
                         capture_output=True, check=True)
 trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
 check(trace[-1]['event'] == 'unmodelled_lcd_command' and trace[-1]['step'] == '44', trace)
+
+# A custom limit applies independently to both CPUs. Invalid options fail before input.
+for limit in (1, 300):
+    result = subprocess.run(command + ['--max-steps', str(limit)], input=bytes(16384),
+                            capture_output=True, check=True)
+    trace = list(csv.DictReader(io.StringIO(result.stdout.decode('ascii'))))
+    check(len(trace) == limit * 2, trace)
+    for last in (trace[limit - 1], trace[-1]):
+        check(last['step'] == str(limit) and last['event'] == 'step_limit', last)
+for options in (['--max-steps'], ['--other', '3'],
+                *(['--max-steps', value] for value in ('0', '-1', '3x', '1000001', '999999999999'))):
+    result = subprocess.run(command + options, input=b'', capture_output=True)
+    check(result.returncode == 2 and not result.stdout, result)
