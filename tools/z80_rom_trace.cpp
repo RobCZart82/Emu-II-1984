@@ -8,6 +8,8 @@
 #include <z80.h>
 
 #include <array>
+#include <charconv>
+#include <string_view>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
@@ -134,9 +136,8 @@ private:
 };
 
 template<class Memory>
-void trace(const char* name, Memory& memory) {
+void trace(const char* name, Memory& memory, unsigned max_steps) {
     TraceCpu<Memory> cpu(memory);
-    constexpr unsigned max_steps = 256;
     for (unsigned step = 1; step <= max_steps; ++step) {
         const auto pc = cpu.get_pc();
         try {
@@ -160,7 +161,22 @@ void trace(const char* name, Memory& memory) {
 }
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    unsigned max_steps = 256;
+    if (argc != 1) {
+        bool valid = false;
+        if (argc == 3 && std::string_view(argv[1]) == "--max-steps") {
+            const std::string_view argument(argv[2]);
+            const auto end = argument.data() + argument.size();
+            const auto result = std::from_chars(argument.data(), end, max_steps);
+            valid = result.ec == std::errc{} && result.ptr == end
+                && max_steps >= 1 && max_steps <= 1000000;
+        }
+        if (!valid) {
+            std::cerr << "Usage: z80_rom_trace [--max-steps 1..1000000]\n";
+            return 2;
+        }
+    }
 #ifdef _WIN32
     if (_setmode(_fileno(stdin), _O_BINARY) == -1) return 1;
 #endif
@@ -176,7 +192,7 @@ int main() {
     main_memory.load_rom(main_bytes);
     scanner_memory.load_rom(scanner_bytes);
     std::cout << "cpu,step,pc_before,pc_after,t_states,event,port,memory_address\n";
-    trace("main", main_memory);
-    trace("scanner", scanner_memory);
+    trace("main", main_memory, max_steps);
+    trace("scanner", scanner_memory, max_steps);
     return std::cout ? 0 : 1;
 }

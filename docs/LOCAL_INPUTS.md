@@ -126,3 +126,13 @@ that first output and now reaches step 110, output 0CBE, with
 `unmodelled_lcd_command`. The receiving circuit is the write-only LCD.
 Other IC47 strobes and overlapping chip selects also stop with explicit events. PIO modes, data
 transfers, readback and interrupt service are not implemented.
+
+Pass `--max-steps N` to the wrapper or native runner to set a limit
+of 1–1,000,000 steps per CPU. The default is 256. The wrapper retains its
+10-second timeout, so use local CSV redirection for long runs.
+
+With a 65,536-step cap, two identical local Main 2.3 / Scanner 3.1 traces
+reached new boundaries. The main CPU stopped at step 2063, PC 003B,
+writing CA06 (low byte 06, SCN2651 in the reference map). The scanner
+stopped at step 1409, PC 0546, writing FFB0 (IC47 Q0 / -SCWL0.D).
+These are independent CPU traces.
